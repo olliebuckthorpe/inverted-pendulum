@@ -296,7 +296,7 @@ used, and anything that was tuned on hardware.
 
 | Dates | Milestone |
 |---|---|
-| **Thu 24 – Mon 28 Sep** | Order everything except the motor and PSU. Sim phase (§11): MuJoCo model, datasheet motor model, answers 1–5. Learn the basics: Brunton's *Control Bootcamp*, Python. **Order the motor and PSU** by about 28 Sep |
+| **Thu 24 – Mon 28 Sep** | Order everything except the motor and PSU. Sim phase (§11): MuJoCo model, datasheet motor model, answers 1–6. Learn the basics: Brunton's *Control Bootcamp*, Python. **Order the motor and PSU** by about 28 Sep |
 | Parts arrive, ~26–30 Sep | Print the cart, end blocks and joint housings. Pico bring-up: blink → AS5047P over SPI → motor encoder over PIO → USB telemetry → **measure the latency** |
 | ~1–7 Oct | Motor arrives. Assemble the rig. **Safety first:** fuse, E-stop, end-stops, watchdog. Run system ID and fit the sim |
 | ~8–14 Oct | LQR balance (started upright) → energy swing-up → **classical complete**. Train the AI in the fitted sim |

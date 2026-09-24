@@ -1,0 +1,41 @@
+# Every physical number for the sim lives here (PLAN 1.2). System ID (Phase 4) overwrites these.
+# Units are SI throughout: m, kg, s, N, V, A, rad.
+# "source" notes say where each number came from; "guess" means a placeholder to be replaced by measurement.
+
+supply:
+  voltage: 12.0            # V. Mean Well GST60A12 (SPEC §6 item 9)
+  current_cap: null        # A. null = unlimited. Set to 5.0 for SPEC §11 Q6 (does the 5 A PSU suffice?)
+
+motor:                     # Pololu 37D 6.3:1 12 V #4757, all figures referred to the GEARBOX OUTPUT shaft
+  R: 2.18                  # ohm. 12 V / 5.5 A stall current (datasheet)
+  Kt: 0.0535               # N·m/A. 0.294 N·m stall torque / 5.5 A (datasheet)
+  Ke: 0.069                # V·s/rad. (12 − 0.2 A·R) / 167.6 rad/s no-load speed (datasheet)
+  I_noload: 0.2            # A. Datasheet no-load current: models gearbox friction as a constant drag torque
+  gear_ratio: 6.3          # datasheet
+  rotor_inertia: 3.0e-6    # kg·m² at the MOTOR shaft. Not published by Pololu. Estimate from comparable
+                           # ~35 mm brushed motors (maxon RE 30 ≈ 3.4e-6, RE 35 ≈ 6.5e-6). Swept 1.5e-6–6e-6.
+  backlash_deg: 1.0        # degrees of play at the output shaft. Pololu forum: "a couple of degrees";
+                           # a customer measured ~1°. Used by the compliant-drive plant only.
+
+drive:
+  pulley_teeth: 20         # 20 or 30 (both bought; SPEC §7). Radius = teeth × pitch / 2π
+  belt_pitch: 0.002        # m. GT2
+  belt_stiffness: 3.0e4    # N/m. guess (GT2 6 mm over ~1 m). Only used by the compliant-drive plant
+  belt_damping: 20.0       # N·s/m. guess
+
+cart:
+  mass: 0.40               # kg. guess: printed cart + MGN12H carriage + bearings + sensor board (PLAN 1.2)
+  travel: 0.40             # m, each way from centre: 1 m rail minus cart and end blocks (PLAN 1.2)
+  coulomb_friction: 1.0    # N. guess (MGN12 clone carriage + belt), separate from the gearbox drag above
+  viscous_friction: 0.5    # N·s/m. guess
+
+pole:
+  length: 0.30             # m. SPEC §7 rod 1
+  mass: 0.020              # kg. 8 mm OD × 1 mm wall aluminium tube, 0.30 m ≈ 0.018 kg (PLAN 1.2)
+  radius: 0.004            # m. 8 mm OD
+  hub_mass: 0.010          # kg. clamp hub at the pivot (PLAN 1.2); rides with the cart
+  pivot_damping: 2.0e-4    # N·m·s/rad. guess (two 608 bearings); fitted from free swing in Phase 4
+
+sim:
+  timestep: 0.001          # s. physics step (PLAN 1.2)
+  control_delay: 0.002     # s. sensing-to-actuation delay (PLAN 1.3 default)
