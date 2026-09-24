@@ -7,6 +7,7 @@ at real speed. The pole is grey while swinging up and turns green while LQR is b
   Save a video to sim/videos/:             uv run python watch.py swingup --video
   Options:  scenario = balance | swingup | tap | double     --seed N   --teeth 20|30   --length 0.30   --seconds 8
             double also takes --traj NAME (a saved trajectory from double_trajopt.py, e.g. 30T_30-20)
+            tour takes --legs DD,UU,UD,DU,DD (D = rod down, U = rod up; bottom rod first)
 """
 
 from __future__ import annotations
@@ -61,7 +62,9 @@ def frames(m, d, log, fps):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("scenario", choices=["balance", "swingup", "tap", "double"])
+    ap.add_argument("scenario", choices=["balance", "swingup", "tap", "double", "tour"])
+    ap.add_argument("--legs", default="DD,UU,UD,DU,DD",
+                    help="tour: resting positions to visit in order (DD, UU, UD, DU)")
     ap.add_argument("--traj", default="30T_30-20_damping150_u60_x30")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--teeth", type=int, default=20)
@@ -70,7 +73,18 @@ def main():
     ap.add_argument("--video", action="store_true")
     a = ap.parse_args()
 
-    if a.scenario == "double":
+    if a.scenario == "tour":
+        import double_control
+        import double_trajopt
+        stops = a.legs.split(",")
+        legs = [f"T_{x}-{y}" for x, y in zip(stops, stops[1:])]
+        base = double_trajopt.layout_params(30, 0.30, 0.20)
+        p = double_trajopt.model.with_params(base, sensing__angle_noise_deg=0.068, supply__current_cap=5.0)
+        design = double_trajopt.model.with_params(p, joint2__damping=p["joint2"]["damping"] * 1.5)
+        log = double_control.tour(p, legs, seed=a.seed, p_design=design, extra=a.seconds)["log"]
+        m = model.build_double(p)
+        a.traj = "-".join(stops)
+    elif a.scenario == "double":
         import double_control
         import double_trajopt
         teeth, rods = a.traj.split("_")[:2]
@@ -97,7 +111,7 @@ def main():
 
     if a.video:
         import imageio.v2 as imageio
-        tag = a.traj if a.scenario == "double" else f"{a.teeth}T-{int(a.length * 100)}cm"
+        tag = a.traj if a.scenario in ("double", "tour") else f"{a.teeth}T-{int(a.length * 100)}cm"
         out = model.SIM_DIR / "videos" / f"{a.scenario}-{tag}-seed{a.seed}.mp4"
         out.parent.mkdir(exist_ok=True)
         r = mujoco.Renderer(m, 480, 854)

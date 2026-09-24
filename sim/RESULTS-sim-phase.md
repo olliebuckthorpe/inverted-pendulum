@@ -232,6 +232,41 @@ Everything below uses the AS5047P datasheet noise (0.068° RMS) and the 5 A supp
 Video: `videos/double-30T_30-20_damping150_u60_x30-seed0.mp4` (noise, Kalman filter, 5 A limit), or live:
 `./watch.sh double`.
 
+## Transitions between all four resting positions (24 Sep, at Ollie's request)
+
+The double has four resting positions (bottom rod first): **DD** both hanging (stable), **UU** both up,
+**UD** rod 1 up with rod 2 hanging off its top, **DU** rod 1 hanging with rod 2 standing on its bottom end.
+The last three have to be balanced.
+
+- **Balance:** all three unstable positions are controllable (rank 6/6) and hold 5/5 for 20 s at datasheet
+  noise with the Kalman filter. DU with plain differencing managed only 2/5.
+- **All 12 transitions planned** (`plan_transition.py`: duty ≤ 0.6, cart ±300 mm, joint-2 friction ×1.5,
+  rod 1 within ±1 turn of hanging for the cable) and flown with TVLQR + Kalman filter (`fly_transitions.py`):
+
+| From → to | Time | Nominal rig | Random post-sysid rigs |
+|---|---|---|---|
+| DD→UU (swing-up) | 2.21 s | 5/5 | 20/20 |
+| DD→UD | 2.75 s | 5/5 | 20/20 |
+| DD→DU | 1.35 s | 5/5 | 20/20 |
+| UU→UD | 1.38 s | 5/5 | 20/20 |
+| UU→DU | 2.10 s | 5/5 | 20/20 |
+| UU→DD | 1.93 s | 5/5 | 20/20 |
+| UD→UU | 1.37 s | 5/5 | 20/20 |
+| UD→DU | 1.74 s | 5/5 | 20/20 |
+| UD→DD | 1.70 s | 5/5 | 20/20 |
+| DU→UU | 1.96 s | 5/5 | 17/20 (uses the full ±300 mm) |
+| DU→UD | 1.69 s | 5/5 | 20/20 |
+| DU→DD | 1.24 s | 5/5 | 20/20 |
+
+- **Tours** (`double_control.tour`, holding each position 2 s): **DD→UU→UD→DU→DD** 5/5 nominal, 10/10 random
+  rigs; **DD→UU→DU→UD→UU→DD** 5/5 nominal, 9/10 random rigs. Video:
+  `videos/tour-DD-UU-UD-DU-DD-seed0.mp4`; live: `./watch.sh tour --legs DD,UU,UD,DU,DD`.
+- **Design constraint found:** UD and DU need rod 2 to swing *past* rod 1, so joint 2 must carry rod 2
+  beside rod 1 (the model offsets it 15 mm sideways), not in line with it.
+- **Precedent:** Graichen, Treuer & Zeitz (Automatica 43, 2007) swung up a double pendulum on a cart on real
+  hardware with planned feedforward plus linear feedback, framing it as a transition between equilibria.
+  Whether they demonstrated every transition on hardware isn't confirmed here.
+
 ## Numbers that are guesses (replace in Phase 4)
 
 | Parameter | Value used | Why it matters |

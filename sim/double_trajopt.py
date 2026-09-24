@@ -39,7 +39,9 @@ class Limits:
 
 
 def solve(p: dict, lim: Limits | None = None, N: int = 150, T_guess: float = 2.5, a1_end: float = 0.0,
-          a2_end: float = 0.0, seed: int = 0, verbose: bool = False, warm: dict | None = None) -> dict:
+          a2_end: float = 0.0, seed: int = 0, verbose: bool = False, warm: dict | None = None,
+          start: tuple = (math.pi, 0.0)) -> dict:
+    """start / (a1_end, a2_end): resting positions as (rod-1 angle from up, rod-2 angle relative to rod 1)."""
     lim = lim or Limits()
     f = double_eom.casadi_dynamics(p)
     m = p["motor"]
@@ -54,7 +56,9 @@ def solve(p: dict, lim: Limits | None = None, N: int = 150, T_guess: float = 2.5
     for k in range(N):  # trapezoidal collocation
         fk, fk1 = f(X[:, k], U[k]), f(X[:, k + 1], U[k + 1])
         opti.subject_to(X[:, k + 1] == X[:, k] + h / 2 * (fk + fk1))
-    opti.subject_to(X[:, 0] == ca.DM([0, math.pi, 0, 0, 0, 0]))
+    opti.subject_to(X[:, 0] == ca.DM([0, start[0], start[1], 0, 0, 0]))
+    # the joint-2 cable crosses joint 1: keep rod 1 within ±1 turn of hanging (a1 = pi)
+    opti.subject_to(opti.bounded(-math.pi + 0.2, X[1, :], 3 * math.pi - 0.2))
     opti.subject_to(X[:, N] == ca.DM([0, a1_end, a2_end, 0, 0, 0]))
     opti.subject_to(opti.bounded(-lim.u_max, U, lim.u_max))
     opti.subject_to(opti.bounded(-lim.x_max, X[0, :], lim.x_max))
@@ -69,8 +73,8 @@ def solve(p: dict, lim: Limits | None = None, N: int = 150, T_guess: float = 2.5
     rng = np.random.default_rng(seed)
     s = np.linspace(0, 1, N + 1)
     guess = np.zeros((6, N + 1))
-    guess[1] = math.pi + (a1_end - math.pi) * s
-    guess[2] = a2_end * s + rng.normal(0, 0.3) * np.sin(math.pi * s)
+    guess[1] = start[0] + (a1_end - start[0]) * s
+    guess[2] = start[1] + (a2_end - start[1]) * s + rng.normal(0, 0.3) * np.sin(math.pi * s)
     guess[0] = 0.1 * rng.normal() * np.sin(2 * math.pi * s)
     opti.set_initial(X, guess)
     opti.set_initial(U, 0.2 * rng.normal(size=N + 1))
@@ -107,7 +111,7 @@ def best_of(p: dict, tries: int = 6, **kw) -> dict:
 
 
 def continuation(p: dict, final: Limits, steps: int = 12, N: int = 300, a1_end: float = 0.0,
-                 a2_end: float = 0.0, verbose: bool = False) -> dict:
+                 a2_end: float = 0.0, verbose: bool = False, start: tuple = (math.pi, 0.0)) -> dict:
     """Solve with a huge motor and long rail, then tighten toward `final`, warm-starting each step.
     Returns the last converged solution and how far the tightening got (1.0 = all the way)."""
     easy = Limits(u_max=20.0, x_max=5.0, supply_max=1e3, T_min=final.T_min, T_max=final.T_max, smooth=final.smooth)
@@ -118,7 +122,7 @@ def continuation(p: dict, final: Limits, steps: int = 12, N: int = 300, a1_end: 
                      x_max=easy.x_max * (final.x_max / easy.x_max) ** s,
                      supply_max=easy.supply_max * (final.supply_max / easy.supply_max) ** s,
                      T_min=final.T_min, T_max=final.T_max, smooth=final.smooth)
-        r = solve(p, lim, N=N, T_guess=3.0, a1_end=a1_end, a2_end=a2_end, warm=prev)
+        r = solve(p, lim, N=N, T_guess=3.0, a1_end=a1_end, a2_end=a2_end, warm=prev, start=start)
         if verbose:
             print(f"  step {i:2d}: u_max {lim.u_max:6.2f} x_max {lim.x_max:5.2f} m supply {lim.supply_max:7.1f} A -> "
                   f"{r['status']} T={r['T']:.2f}s", flush=True)

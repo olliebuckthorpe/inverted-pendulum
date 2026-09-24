@@ -215,7 +215,9 @@ def double_xml(p: dict) -> str:
         <geom name="hub" type="sphere" size="0.012" mass="{q['hub_mass']}" rgba="0.3 0.3 0.3 1"/>
         <geom name="pole" type="cylinder" fromto="0 0 0 0 0 {q['length']}" size="{q['radius']}"
               mass="{q['mass']}" rgba="0.8 0.8 0.85 1"/>
-        <body name="pole2" pos="0 0 {q['length']}">
+        <!-- rod 2 sits 15 mm to the side of rod 1 so it can swing past it (needed for the UD and DU positions);
+             an offset along the hinge axis doesn't change the motion in the plane of the swing -->
+        <body name="pole2" pos="0 -0.015 {q['length']}">
           <joint name="hinge2" type="hinge" axis="0 1 0" limited="false" damping="{j2['damping']}" frictionloss="{j2.get('coulomb', 0.0)}"/>
           <geom name="joint2" type="sphere" size="0.01" mass="{j2['mass']}" rgba="0.3 0.3 0.3 1"/>
           <geom name="pole2" type="cylinder" fromto="0 0 0 0 0 {q2['length']}" size="{q2['radius']}"

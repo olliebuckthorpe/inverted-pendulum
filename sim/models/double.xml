@@ -23,7 +23,9 @@
         <geom name="hub" type="sphere" size="0.012" mass="0.01" rgba="0.3 0.3 0.3 1"/>
         <geom name="pole" type="cylinder" fromto="0 0 0 0 0 0.3" size="0.004"
               mass="0.02" rgba="0.8 0.8 0.85 1"/>
-        <body name="pole2" pos="0 0 0.3">
+        <!-- rod 2 sits 15 mm to the side of rod 1 so it can swing past it (needed for the UD and DU positions);
+             an offset along the hinge axis doesn't change the motion in the plane of the swing -->
+        <body name="pole2" pos="0 -0.015 0.3">
           <joint name="hinge2" type="hinge" axis="0 1 0" limited="false" damping="0.0001" frictionloss="0.0"/>
           <geom name="joint2" type="sphere" size="0.01" mass="0.02" rgba="0.3 0.3 0.3 1"/>
           <geom name="pole2" type="cylinder" fromto="0 0 0 0 0 0.2" size="0.004"

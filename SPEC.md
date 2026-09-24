@@ -28,7 +28,7 @@ head-to-head on the same real hardware using a test set fixed in advance.
 | Tier | What | Status by 5 Nov |
 |---|---|---|
 | **Must have** | **Single rod**: classical and AI both swing up and balance on the real rig; the full test set is run; filmed | Required |
-| **Stretch** | **Double rod**: balances on the real rig (started upright by hand). LQR on hardware, with AI in simulation and possibly on hardware. **Double swing-up + hand-over to balance in simulation** (added 2026-09-24 at Ollie's request; classical = trajectory optimisation + time-varying LQR). **Double swing-up on hardware: Ollie decided to attempt it (24 Sep)**, see below | Only after the single is done. **Hard stop 1 Nov** |
+| **Stretch** | **Double rod**: balances on the real rig (started upright by hand). LQR on hardware, with AI in simulation and possibly on hardware. **Double swing-up + hand-over to balance in simulation** (added 2026-09-24 at Ollie's request; classical = trajectory optimisation + time-varying LQR). **Transitions between all four resting positions (DD, UU, UD, DU) in simulation**, all 12 working (added 2026-09-24); on hardware, they come after the double swing-up, behind the same gates. **Double swing-up on hardware: Ollie decided to attempt it (24 Sep)**, see below | Only after the single is done. **Hard stop 1 Nov** |
 | **Reach** | Triple | **Out of scope before 5 Nov.** "What's next" in the write-up |
 
 **Double swing-up on hardware (decided 2026-09-24: attempt it, as the top of the stretch tier).** The sim

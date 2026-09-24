@@ -41,9 +41,14 @@ def jacobians(p: dict):
     return ca.Function("AB", [s, u], [ca.jacobian(fx, s), ca.jacobian(fx, u)])
 
 
-def balance_gain(p: dict, rate_hz: float) -> np.ndarray:
+# The four resting positions, as (a1, a2): a1 = rod 1 from upright, a2 = rod 2 RELATIVE to rod 1.
+EQUILIBRIA = {"DD": (math.pi, 0.0), "UU": (0.0, 0.0), "UD": (0.0, math.pi), "DU": (math.pi, math.pi)}
+
+
+def balance_gain(p: dict, rate_hz: float, eq=(0.0, 0.0)) -> np.ndarray:
+    """LQR gain for holding the rig at a resting position eq = (a1, a2); default upright (UU)."""
     AB = jacobians(p)
-    A, B = (np.array(M) for M in AB(np.zeros(6), 0.0))
+    A, B = (np.array(M) for M in AB(np.array([0.0, eq[0], eq[1], 0.0, 0.0, 0.0]), 0.0))
     sysd = control.c2d(control.ss(A, B, np.eye(6), 0), 1.0 / rate_hz, method="zoh")
     K, S, _ = control.dlqr(sysd.A, sysd.B, Q_BAL, R_BAL)
     return np.asarray(K), np.asarray(S)
@@ -59,7 +64,7 @@ def tvlqr(p: dict, traj: dict, rate_hz: float, Q: np.ndarray | None = None, R: n
     U = np.interp(ts, traj["t"], traj["U"])
     Qt = Q_TRK if Q is None else Q
     Rt = R_TRK if R is None else R
-    K_end, S = balance_gain(p, rate_hz)
+    K_end, S = balance_gain(p, rate_hz, eq=(traj["X"][1, -1], traj["X"][2, -1]))
     Ks = np.zeros((len(ts), 6))
     Ads = np.zeros((len(ts), 6, 6)); Bds = np.zeros((len(ts), 6, 1))
     for k in range(len(ts) - 1, -1, -1):
@@ -123,7 +128,8 @@ def kalman_gains(p: dict, gains: dict, W: np.ndarray = KF_W) -> dict:
         P = (np.eye(6) - L[k] @ C) @ Pm
     # balance: steady-state gain for the upright model (iterate the same recursion to convergence)
     AB = jacobians(p)
-    A, B = (np.array(M) for M in AB(np.zeros(6), 0.0))
+    end = np.array([0.0, gains["X"][-1][1], gains["X"][-1][2], 0.0, 0.0, 0.0])  # where the plan finishes
+    A, B = (np.array(M) for M in AB(end, 0.0))
     sysd = control.c2d(control.ss(A, B, np.eye(6), 0), gains["dt"], method="zoh")
     Ab, Bb = np.asarray(sysd.A), np.asarray(sysd.B)
     for _ in range(3000):
@@ -254,8 +260,9 @@ def trial(p: dict, traj: dict, rate_hz: float = 1000.0, seconds: float | None = 
     else:
         ctrl = SwingUpThenBalanceKF(p, gains, kf, end, delay_cycles=round(plant.delay_steps / plant.n))
     log = plant.run(ctrl, seconds, stop=lambda d: abs(d.qpos[0]) > 0.395)
-    a1 = np.array([wrap(v) for v in log["q"][:, 1]])
-    a2 = np.array([wrap(v) for v in log["q"][:, 2]])
+    # success = resting at the plan's END position (not necessarily upright) for the last 2 s
+    a1 = np.array([wrap(v - end[0]) for v in log["q"][:, 1]])
+    a2 = np.array([wrap(v - end[1]) for v in log["q"][:, 2]])
     tail = log["t"] >= log["t"][-1] - 2.0
     finished = log["t"][-1] >= seconds - 2 * plant.dt
     ok = bool(finished and np.all(np.abs(a1[tail]) < math.radians(10)) and np.all(np.abs(a2[tail]) < math.radians(10)))
@@ -273,3 +280,58 @@ if __name__ == "__main__":
     r = trial(p, traj)
     print(f"{name}: {'BALANCED' if r['ok'] else 'FAILED'} after a {traj['T']:.2f} s swing-up; "
           f"max|x| {r['max_x'] * 1000:.0f} mm, peak supply {r['peak_supply_A']:.1f} A")
+
+
+# ---------------------------------------------------------------------------------------------------------
+# Tours: chain transitions between resting positions (e.g. UU -> UD -> DD -> DU -> UU), holding each one
+# ---------------------------------------------------------------------------------------------------------
+
+class Tour:
+    """Runs one SwingUpThenBalanceKF per leg: follow the leg's plan, balance at its end for `hold` seconds,
+    then start the next leg. `mode` reports 2 while moving and 1 while holding a position."""
+
+    def __init__(self, p_design: dict, legs: list[str], rate_hz: float, hold: float, delay_cycles: int):
+        self.segments = []
+        for name in legs:
+            traj = double_trajopt.load(name)
+            g = tvlqr(p_design, traj, rate_hz)
+            kf = kalman_gains(p_design, g)
+            end = (traj["X"][1, -1], traj["X"][2, -1])
+            ctrl = SwingUpThenBalanceKF(p_design, g, kf, end, delay_cycles=delay_cycles)
+            self.segments.append((ctrl, round((g["T"] + hold) * rate_hz)))
+        self.i, self.calls, self.mode = 0, 0, 2
+
+    def __call__(self, t: float, s: np.ndarray) -> float:
+        ctrl, n = self.segments[self.i]
+        if self.calls >= n and self.i < len(self.segments) - 1:
+            self.i, self.calls = self.i + 1, 0
+            ctrl, n = self.segments[self.i]
+        self.calls += 1
+        u = ctrl(t, s)
+        self.mode = ctrl.mode
+        return u
+
+
+def tour(p: dict, legs: list[str], rate_hz: float = 500.0, hold: float = 2.0, seed: int = 0,
+         p_design: dict | None = None, extra: float = 3.0) -> dict:
+    """Fly a chain of planned transitions on rig `p` (controller designed on `p_design`). The first leg must
+    start from rest at its planned start. Success = every leg reaches its end position and holds it."""
+    p_design = p_design or p
+    first = double_trajopt.load(legs[0])
+    start = (0.0, float(first["X"][1, 0]), float(first["X"][2, 0]))
+    plant = DoublePlant(p, rate_hz=rate_hz, seed=seed)
+    plant.reset(q=start)
+    ctrl = Tour(p_design, legs, rate_hz, hold, delay_cycles=round(plant.delay_steps / plant.n))
+    seconds = sum(n for _, n in ctrl.segments) / rate_hz + extra
+    log = plant.run(ctrl, seconds, stop=lambda d: abs(d.qpos[0]) > 0.395)
+    # check each leg's hold window: the rig must be at that leg's end position
+    ok, t0 = log["t"][-1] >= seconds - 2 * plant.dt, 0.0
+    for name, (_, n) in zip(legs, ctrl.segments):
+        traj = double_trajopt.load(name)
+        t_end = t0 + n / rate_hz
+        w = (log["t"] >= t_end - hold * 0.5) & (log["t"] < t_end)
+        e1 = np.array([wrap(v - traj["X"][1, -1]) for v in log["q"][w, 1]])
+        e2 = np.array([wrap(v - traj["X"][2, -1]) for v in log["q"][w, 2]])
+        ok = ok and w.any() and np.all(np.abs(e1) < math.radians(10)) and np.all(np.abs(e2) < math.radians(10))
+        t0 = t_end
+    return {"ok": bool(ok), "log": log, "max_x": float(np.abs(log["q"][:, 0]).max())}
