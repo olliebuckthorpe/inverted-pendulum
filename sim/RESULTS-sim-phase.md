@@ -7,7 +7,7 @@ won't work; it can't prove that something will (SPEC §11). Every number below w
 **Rig simulated:** MuJoCo at 1 kHz. The motor model comes from the Pololu 37D datasheet, including the rotor's
 reflected inertia. There's a 2 ms control delay, quantised sensors (400-count motor encoder, 14-bit angle),
 and velocities from filtered differencing, as the Pico will do. Code and tests are in `sim/`
-(`uv run pytest`: 15 tests).
+(`uv run pytest`: 16 tests).
 
 ## Answers at a glance
 
