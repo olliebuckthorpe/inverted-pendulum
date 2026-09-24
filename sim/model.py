@@ -33,6 +33,11 @@ def load_params(path: Path = PARAMS_PATH, **overrides) -> dict:
         p = yaml.safe_load(f)
     for dotted, value in overrides.items():
         set_param(p, dotted, value)
+    for section, values in p.items():
+        for key, value in values.items():
+            # PyYAML reads "3.0e4" as a string (YAML 1.1 wants "3.0e+4"), so catch that here.
+            if value is not None and not isinstance(value, (int, float)):
+                raise TypeError(f"params.yaml {section}.{key} = {value!r} is not a number")
     return p
 
 
