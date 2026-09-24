@@ -16,3 +16,6 @@ media/clips/
 .DS_Store
 .env
 .env.*
+
+# Sim videos (regenerate with sim/watch.py --video)
+sim/videos/
