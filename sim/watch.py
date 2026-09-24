@@ -3,7 +3,7 @@
 The run is simulated first (exactly as in the checks, with delay and quantised sensors), then replayed
 at real speed. The pole is grey while swinging up and turns green while LQR is balancing.
 
-  Live 3D window (macOS needs mjpython):   uv run mjpython watch.py swingup
+  Live 3D window:                          ./watch.sh swingup   (wraps mjpython; see the script)
   Save a video to sim/videos/:             uv run python watch.py swingup --video
   Options:  scenario = balance | swingup | tap     --seed N   --teeth 20|30   --length 0.30   --seconds 8
 """
