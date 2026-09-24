@@ -19,8 +19,8 @@ any phase with zero re-discovery.
 
 | Date | Gate |
 |---|---|
-| Thu 24 Sep | Order all non-motor parts |
-| **Mon 28 Sep** | 🚦 **Order the motor** (sim answer or the default) |
+| Thu 24 Sep | Order all parts except the motor and PSU |
+| **Mon 28 Sep** | 🚦 **Order the motor and the PSU** (sim answers or the defaults) |
 | **Sun 4 Oct** | 🚦 Safety checklist passed before any closed-loop run |
 | **Sun 11 Oct** | 🚦 Test-protocol numbers fixed in `analysis/PROTOCOL.md` (before the first test trial) |
 | **Wed 21 Oct** | 🚦 **Single DONE** target (SPEC §4). If not done by **Sun 25 Oct**, skip the double entirely |
@@ -44,8 +44,8 @@ Everything below is already researched and sourced in SPEC §6–§17. Don't re-
 ## Phase 0 — Today, Thu 24 Sep: order + repo
 
 **0.1 Order the non-motor parts (Ollie).**
-- Use SPEC §6 items 1–18. Re-check every ⚠️ price at checkout: the rail at **1000 mm**, the AS5047P kit, the MD13S VAT, the E-stop, the shaft. Skip anything already owned (breadboard, jumpers, bolts, wire).
-- Double-check the exact specs as you buy: **GT2 6 mm belt; 20T and 30T pulleys with a 6 mm bore; MGN12H carriage; Pico 2 H; AS5047P-TS_EK_AB; MD13S; GST60A12-P1J from RS.**
+- Use SPEC §6 items 1–18 plus **15a (relay) and 15b (diode)**, but **not item 9, the PSU**: it's ordered with the motor once sim Q6 has sized it. Re-check every ⚠️ price at checkout: the rail at **1000 mm**, the AS5047P kit, the MD13S VAT, the E-stop, the shaft. Skip anything already owned (breadboard, jumpers, bolts, wire).
+- Double-check the exact specs as you buy: **GT2 6 mm belt; 20T and 30T pulleys with a 6 mm bore; MGN12H carriage; Pico 2 H; AS5047P-TS_EK_AB; MD13S; a 12 V automotive relay with 30–40 A contacts.**
 - **Done when:** order confirmations have been saved to `hardware/orders.md` (item, seller, price paid, expected delivery).
 
 **0.2 Create the repo.**
@@ -81,7 +81,8 @@ answer isn't clear by Mon 28 Sep, use the default (Pololu 37D 6.3:1, 20T pulley,
 **1.3 DC motor model from the Pololu datasheet** (`sim/motor.py`).
 - Datasheet, output-referred (Pololu #4757, 12 V): stall torque **0.294 N·m**, stall current **5.5 A**, no-load **1600 RPM at 0.2 A**.
 - Derived: R = 12 / 5.5 ≈ **2.18 Ω**; Kt ≈ 0.294 / 5.5 ≈ **0.0535 N·m/A**; ω₀ = 167.6 rad/s; Ke ≈ (12 − 0.2·R) / ω₀ ≈ **0.069 V·s/rad**. Kt ≠ Ke reflects gearbox friction and efficiency; keep both, and fit them in Phase 4.
-- The model runs each step: the input is a duty cycle in [−1, 1] → voltage = duty × 12 V → I = (V − Ke·ω)/R, clamped to ±5.5 A → τ = Kt·I → cart force F = τ / r_pulley (r = teeth × 2 mm / 2π; **20T: 6.37 mm, 30T: 9.55 mm**) → apply F to the cart slide joint. Include the motor/gear rotor inertia as reflected cart mass (placeholder 0).
+- The model runs each step: the input is a duty cycle in [−1, 1] → voltage = duty × 12 V → I = (V − Ke·ω)/R (**not** clamped at the 5.5 A stall figure: a reversal at speed really does draw more, and that's what Q6 must measure) → τ = Kt·I → cart force F = τ / r_pulley (r = teeth × 2 mm / 2π; **20T: 6.37 mm, 30T: 9.55 mm**) → apply F to the cart slide joint. Include the motor/gear rotor inertia as reflected cart mass (placeholder 0).
+- Log the **supply current** (≈ |duty| × motor current when driving; H-bridge approximation) each step, and add an optional **PSU current cap** (default off; 5 A for Q6).
 - Add parameters for later: **gearbox backlash** (a dead-band on cart position, default 0.2 mm ≈ 1° at the output), **Coulomb + viscous rail friction**, and **control delay** (default 2 ms).
 - **Done when:** a unit check passes. Full duty on a locked cart gives F ≈ 46 N (20T) / 31 N (30T), and a free cart's top speed approaches ≈ 1.07 / 1.60 m/s.
 
@@ -96,13 +97,14 @@ answer isn't clear by Mon 28 Sep, use the default (Pololu 37D 6.3:1, 20T pulley,
 - **Hand-over:** switch to LQR when |θ| < ~20° and the energy is close to upright. Tune the thresholds; they become SPEC §18 open items.
 - **Done when:** from hanging at rest, it swings up and balances within 10 s, with the cart staying inside ±0.40 m, in ≥ 9 of 10 runs (with small random starting offsets).
 
-**1.6 Answer the five questions.** Write the answers into `sim/RESULTS-sim-phase.md` with plots.
+**1.6 Answer the six questions.** Write the answers into `sim/RESULTS-sim-phase.md` with plots.
 1. **Motor adequacy:** does 1.5 succeed with the datasheet motor on 20T *or* 30T, with a margin? Also run it with 30% less torque and 30% more friction. If it passes → **order the motor**.
 2. **Pulley:** compare 20T vs 30T on swing-up time, peak cart travel, and balance robustness (the largest kick survived). Pick one.
 3. **Rod length:** repeat 2 with 0.40 m. Keep 0.30 m unless 0.40 m is clearly better.
 4. **Loop rate:** sweep the LQR at 100/200/500/1000 Hz with 2 ms delay. Pick the lowest rate that keeps the full robustness, ×2 for margin. Expect ~500 Hz.
 5. **Double layout:** build `sim/models/double.xml` (a carbon top rod ~0.015 kg). LQR-balance it (started upright) for combos of bottom/top length (0.30/0.20, 0.30/0.30, 0.20/0.30, 0.34/0.20). Pick the combo with the **largest kick survived**, and record the loop rate it needs (expect ~1 kHz).
-- **Done when:** `RESULTS-sim-phase.md` answers all five, and the motor has been ordered (🚦 **Mon 28 Sep**). Commit and push.
+6. **PSU (SPEC §11 Q6):** log the peak/RMS supply current and the time above 5.25 A in the 1.5 swing-up; re-run 1.5 with the supply capped at 5 A. If it still passes ≥ 9/10 → GST60A12 + 7.5 A fuse; otherwise → a larger 12 V PSU (price-checked) and a resized fuse. **Order the PSU with the motor.**
+- **Done when:** `RESULTS-sim-phase.md` answers all six, and the motor and PSU have been ordered (🚦 **Mon 28 Sep**). Commit and push.
 
 **Fallback:** if the datasheet motor can't swing up on either pulley even at nominal values → switch to the 24 V Pololu 37D 6.3:1 (#4698) plus a 24 V PSU (the Cytron handles up to 30 V), re-run question 1, and update SPEC §6.
 
@@ -115,6 +117,7 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 **2.1 Datasheet checks (before wiring anything).**
 - Cytron MD13S: the input logic HIGH threshold (it must accept 3.3 V from the Pico), the PWM frequency range, the DIR/PWM mode, the power-on state.
 - Regenerative braking: decide on a mitigation from the MD13S and GST60A12 docs (a bulk electrolytic capacitor across the supply at the driver and/or a TVS diode) and add it to the parts list if needed.
+- **End-stop sensing:** decide how the Pico reads the end-stop states without 12 V reaching a 3.3 V pin (SPEC §8 relay loop).
 - Record the findings in `hardware/electronics.md` with a wiring diagram (a drawn photo is fine).
 - **Done when:** `electronics.md` has the power path from SPEC §8, the pin map, and both decisions.
 
@@ -146,14 +149,14 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 
 **3.1 Mechanical assembly.** The rail on a rigid, flat base (clamped to the desk), the motor and idler blocks, the belt tensioned (firm, with no slack but not over-tight), the cart, the joint, and the 30 cm rod.
 
-**3.2 Power wiring per SPEC §8.** PSU → 7.5 A fuse → E-stop → NC end-stops in series → MD13S → motor. The regen mitigation from 2.1. Shared ground with the Pico.
+**3.2 Power wiring per SPEC §8.** PSU → fuse → E-stop → relay contacts → MD13S → motor; relay coil fed through the NC end-stops in series, with a flyback diode. The regen mitigation from 2.1. Shared ground with the Pico.
 
 **3.3 Motor encoder via PIO.** Port `pico-examples/pio/quadrature_encoder` to arduino-pico.
 - **Done when:** moving the cart by hand along the whole rail gives a consistent count, and the counts per metre (from the pulley geometry) are verified with a ruler to within 1%.
 
 **3.4 Safety checklist 🚦 (Sun 4 Oct).** Every item must be tested and **seen working**, then logged in `hardware/safety-checklist.md` with the date:
 - [ ] The E-stop cuts motor power mid-motion (tested at low duty).
-- [ ] Each end-stop cuts motor power when hit, and the Pico reports which one.
+- [ ] Each end-stop drops the relay (cutting motor power) when hit, and the Pico reports which one.
 - [ ] The heartbeat watchdog: pulling the USB or killing the Mac script **stops the motor within 100 ms**.
 - [ ] The Pico hardware watchdog: a deliberate hang in the firmware → reset → motor off.
 - [ ] **The motor is off on boot and on reset** (no twitch).
