@@ -39,3 +39,9 @@ pole:
 sim:
   timestep: 0.001          # s. physics step (PLAN 1.2)
   control_delay: 0.002     # s. sensing-to-actuation delay (PLAN 1.3 default)
+
+sensing:                   # what the Pico will actually see (SPEC §9)
+  cart_counts_per_rev: 403.2   # 64 CPR motor encoder × 6.3 gearbox, counted at the output shaft (datasheet)
+  angle_bits: 14               # AS5047P: 16384 counts per turn = 0.022° (SPEC §6)
+  angle_noise_deg: 0.0         # std-dev; replaced by the measured value from PLAN 2.4
+  velocity_filter_hz: 100.0    # velocities = finite difference, then a first-order low-pass at this cutoff
