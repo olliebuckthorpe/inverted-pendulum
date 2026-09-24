@@ -28,10 +28,16 @@ head-to-head on the same real hardware using a test set fixed in advance.
 | Tier | What | Status by 5 Nov |
 |---|---|---|
 | **Must have** | **Single rod**: classical and AI both swing up and balance on the real rig; the full test set is run; filmed | Required |
-| **Stretch** | **Double rod**: balances on the real rig (started upright by hand; no double swing-up). LQR on hardware, with AI in simulation and possibly on hardware | Only after the single is done. **Hard stop 1 Nov** |
+| **Stretch** | **Double rod**: balances on the real rig (started upright by hand). LQR on hardware, with AI in simulation and possibly on hardware. **Double swing-up + hand-over to balance in simulation** (added 2026-09-24 at Ollie's request; classical = trajectory optimisation + time-varying LQR). Double swing-up **on hardware**: undecided, see below | Only after the single is done. **Hard stop 1 Nov** |
 | **Reach** | Triple | **Out of scope before 5 Nov.** "What's next" in the write-up |
 
-**Out of scope:** double or triple swing-up on hardware, slip rings, a custom PCB, running the AI on the Mac
+**Double swing-up on hardware (open decision, 2026-09-24):** Ollie wants to attempt it. The sim shows it is
+physically possible (RESULTS-sim-phase.md), but no hobby build has been found that achieved it (the closest,
+Hackaday #12827, only did it in simulation), and it needs joint 1 to spin freely with the joint-2 sensor on it:
+a slip ring (SPI through one is unproven) or a wireless sensor (ESP-NOW adds ~5–25 ms latency). Decide after the
+sim phase; until then the cart and joint-1 design must leave room for a slip ring at the far shaft end.
+
+**Out of scope:** triple swing-up on hardware, a custom PCB, running the AI on the Mac
 in the loop, Isaac Sim, and hand-derived equations (optional later).
 
 ## 4. Definition of done
