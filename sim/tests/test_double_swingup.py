@@ -11,3 +11,14 @@ def test_double_swingup_tracks_and_balances_under_5A_cap():
     r = double_control.trial(p, double_trajopt.load("30T_30-20"))
     assert r["ok"], (r["max_x"], r["peak_supply_A"])
     assert r["max_x"] < 0.395
+
+
+def test_kalman_filter_handles_datasheet_sensor_noise():
+    # AS5047P datasheet noise (0.068° RMS): plain differencing fails, the Kalman filter must not.
+    p = model.with_params(double_trajopt.layout_params(30, 0.30, 0.20), supply__current_cap=5.0,
+                          sensing__angle_noise_deg=0.068)
+    traj = double_trajopt.load("30T_30-20")
+    g = double_control.tvlqr(p, traj, 500.0)
+    kf = double_control.kalman_gains(p, g)
+    assert all(double_control.trial(p, traj, rate_hz=500.0, gains=g, kf=kf, seed=s)["ok"] for s in range(3))
+    assert not double_control.trial(p, traj, rate_hz=500.0, gains=g, seed=0)["ok"]  # the problem it solves

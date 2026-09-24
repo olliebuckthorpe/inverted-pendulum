@@ -1,0 +1,78 @@
+{
+  "nominal (0.068\u00b0 noise)": {
+    "diff": 0,
+    "kf": 10
+  },
+  "noise 0.10\u00b0": {
+    "diff": 0,
+    "kf": 10
+  },
+  "noise 0.15\u00b0": {
+    "diff": 0,
+    "kf": 8
+  },
+  "cart mass \u00b120% (+)": {
+    "diff": 0,
+    "kf": 10
+  },
+  "cart mass \u00b120% (\u2212)": {
+    "diff": 0,
+    "kf": 10
+  },
+  "rotor inertia \u00d71.4": {
+    "diff": 0,
+    "kf": 0
+  },
+  "rotor inertia \u00d70.7": {
+    "diff": 0,
+    "kf": 10
+  },
+  "motor Kt \u221210%": {
+    "diff": 0,
+    "kf": 10
+  },
+  "motor Kt \u221220%": {
+    "diff": 0,
+    "kf": 0
+  },
+  "rail friction \u00d72": {
+    "diff": 0,
+    "kf": 10
+  },
+  "joint-2 mass +10%": {
+    "diff": 0,
+    "kf": 9
+  },
+  "joint-2 mass \u221210%": {
+    "diff": 0,
+    "kf": 10
+  },
+  "joint-2 mass +25%": {
+    "diff": 0,
+    "kf": 0
+  },
+  "joint-2 mass \u221225%": {
+    "diff": 0,
+    "kf": 0
+  },
+  "top-rod mass +10%": {
+    "diff": 0,
+    "kf": 8
+  },
+  "top-rod mass +20%": {
+    "diff": 0,
+    "kf": 0
+  },
+  "joint friction \u00d72": {
+    "diff": 0,
+    "kf": 0
+  },
+  "joint friction \u00d75": {
+    "diff": 0,
+    "kf": 0
+  },
+  "delay 4 ms": {
+    "diff": 0,
+    "kf": 10
+  }
+}

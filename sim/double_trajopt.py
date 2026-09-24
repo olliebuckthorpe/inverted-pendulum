@@ -160,13 +160,17 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:  # one case, e.g. "30T_30-20", so cases can run in parallel processes
         teeth, rods = sys.argv[1].split("_")
         cases = [(int(teeth[:-1]), *(int(v) / 100 for v in rods.split("-")))]
+    u_max = Limits().u_max
     if len(sys.argv) > 2:  # optional tighter rail limit (m), e.g. 0.30, to leave the tracker room
         x_max = float(sys.argv[2])
         suffix = f"_x{int(x_max * 100)}"
+    if len(sys.argv) > 3:  # optional lower duty limit, e.g. 0.6, to leave the tracker more authority
+        u_max = float(sys.argv[3])
+        suffix += f"_u{int(u_max * 100)}"
     out = {}
     for teeth, bottom, top in cases:
         key = f"{teeth}T_{int(bottom * 100)}-{int(top * 100)}{suffix}"
-        r = continuation(layout_params(teeth, bottom, top), Limits(x_max=x_max), steps=6)
+        r = continuation(layout_params(teeth, bottom, top), Limits(x_max=x_max, u_max=u_max, T_max=12.0), steps=6)
         if r["ok"]:
             save(r, key)
             out[key] = {k: r[k] for k in ("T", "max_x", "peak_supply_A", "max_a1d", "max_a2d")}
