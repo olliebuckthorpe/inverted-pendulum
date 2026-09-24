@@ -28,14 +28,22 @@ head-to-head on the same real hardware using a test set fixed in advance.
 | Tier | What | Status by 5 Nov |
 |---|---|---|
 | **Must have** | **Single rod**: classical and AI both swing up and balance on the real rig; the full test set is run; filmed | Required |
-| **Stretch** | **Double rod**: balances on the real rig (started upright by hand). LQR on hardware, with AI in simulation and possibly on hardware. **Double swing-up + hand-over to balance in simulation** (added 2026-09-24 at Ollie's request; classical = trajectory optimisation + time-varying LQR). Double swing-up **on hardware**: undecided, see below | Only after the single is done. **Hard stop 1 Nov** |
+| **Stretch** | **Double rod**: balances on the real rig (started upright by hand). LQR on hardware, with AI in simulation and possibly on hardware. **Double swing-up + hand-over to balance in simulation** (added 2026-09-24 at Ollie's request; classical = trajectory optimisation + time-varying LQR). **Double swing-up on hardware: Ollie decided to attempt it (24 Sep)**, see below | Only after the single is done. **Hard stop 1 Nov** |
 | **Reach** | Triple | **Out of scope before 5 Nov.** "What's next" in the write-up |
 
-**Double swing-up on hardware (open decision, 2026-09-24):** Ollie wants to attempt it. The sim shows it is
-physically possible (RESULTS-sim-phase.md), but no hobby build has been found that achieved it (the closest,
-Hackaday #12827, only did it in simulation), and it needs joint 1 to spin freely with the joint-2 sensor on it:
-a slip ring (SPI through one is unproven) or a wireless sensor (ESP-NOW adds ~5–25 ms latency). Decide after the
-sim phase; until then the cart and joint-1 design must leave room for a slip ring at the far shaft end.
+**Double swing-up on hardware (decided 2026-09-24: attempt it, as the top of the stretch tier).** The sim
+shows it's physically possible with this motor, rail and PSU (sim/RESULTS-sim-phase.md), but no hobby build
+has been found that achieved it (the closest, Hackaday #12827, only did it in simulation). It stays behind the
+same gates: the single must be done first, then double balance, and **the double still stops on 1 Nov**. If
+the swing-up isn't working by then, the result is "double balances on hardware; swing-up shown in sim".
+What it needs beyond double balance:
+- joint 1 must spin freely with the joint-2 sensor on it: a **slip ring** (bench-test its friction and the
+  sensor signal through it early) or a **wireless** sensor. **Signal path: to decide.**
+- the double's masses and joint friction **measured, not guessed**: the sim's swing-up fails at ±25% joint-2
+  mass, +20% top-rod mass or 5× pivot friction;
+- a **state estimator** (e.g. a Kalman filter) instead of plain differencing: the sim's swing-up fails with
+  0.05° of random angle noise (balance survives it);
+- the trajectory **re-planned on the fitted model** (about 10 minutes of compute).
 
 **Out of scope:** triple swing-up on hardware, a custom PCB, running the AI on the Mac
 in the loop, Isaac Sim, and hand-derived equations (optional later).
@@ -148,8 +156,9 @@ Do **not** save money on the rail, motor or sensor. Those are where precision de
 - **Rail:** 1 m MGN12, bolted flat to a rigid base, with printed end blocks holding the motor and idler.
 - **Cart:** 3D-printed and **as light as possible** (less mass means less force needed). It carries joint 1
   and its sensor.
-- **Drive:** GT2 6 mm belt, a metal pulley on the motor, and the idler at the far end. **Both 20T and 30T
-  pulleys are bought; the sim picks** (20T: ~46 N stall, 1.07 m/s; 30T: ~31 N, 1.60 m/s. Calculated from
+- **Drive:** GT2 6 mm belt, a metal pulley on the motor, and the idler at the far end. **30T chosen
+  (Ollie, 24 Sep), from the sim** (RESULTS-sim-phase.md §2: +22% robustness, because the rotor's reflected
+  inertia is 2.25× smaller than on 20T). Both pulleys are still bought (20T: ~46 N stall, 1.07 m/s; 30T: ~31 N, 1.60 m/s. Calculated from
   specs, not measured).
 - **Joint 1:** an 8 mm shaft through **two 608 bearings** in the cart. Two bearings stop the shaft tilting;
   one lets it bind and misaligns the sensor. The diametric magnet is glued to the shaft end, and the

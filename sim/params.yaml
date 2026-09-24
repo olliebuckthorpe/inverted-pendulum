@@ -18,7 +18,7 @@ motor:                     # Pololu 37D 6.3:1 12 V #4757, all figures referred t
                            # a customer measured ~1°. Used by the compliant-drive plant only.
 
 drive:
-  pulley_teeth: 20         # 20 or 30 (both bought; SPEC §7). Radius = teeth × pitch / 2π
+  pulley_teeth: 30         # 30T chosen from the sim (SPEC §7, RESULTS-sim-phase.md §2). Radius = teeth × pitch / 2π
   belt_pitch: 0.002        # m. GT2
   belt_stiffness: 3.0e+4   # N/m. guess (GT2 6 mm over ~1 m). Only used by the compliant-drive plant
   belt_damping: 20.0       # N·s/m. guess

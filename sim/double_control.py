@@ -112,6 +112,7 @@ class DoublePlant:
                                2 * math.pi / 2 ** s["angle_bits"], 2 * math.pi / 2 ** s["angle_bits"]])
         self.alpha = self.ctrl_dt / (self.ctrl_dt + 1 / (2 * math.pi * s["velocity_filter_hz"]))
         self.cap = p["supply"]["current_cap"]
+        self.noise = math.radians(s["angle_noise_deg"])
         self.rng = np.random.default_rng(seed)
 
     def reset(self, q=(0.0, math.pi, 0.0), qd=(0.0, 0.0, 0.0)):
@@ -125,6 +126,8 @@ class DoublePlant:
 
     def measure(self) -> np.ndarray:
         raw = np.array(self.d.qpos[:3])
+        if self.noise:
+            raw[1:] += self.rng.normal(0, self.noise, 2)
         # the angle sensors only report 0..2π: wrap them, then unwrap by accumulating the change
         meas = np.round(raw / self.steps) * self.steps
         delta = meas - self.prev

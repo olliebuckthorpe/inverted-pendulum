@@ -27,13 +27,13 @@
     </body>
     <body name="drive" pos="0 -0.05 0">
       <joint name="drive" type="slide" axis="1 0 0" limited="false"
-             armature="2.937934490094274" frictionloss="1.6807520696705394"/>
+             armature="1.3057486622641223" frictionloss="1.1205013797803598"/>
       <geom type="box" size="0.01 0.005 0.005" mass="1e-4" rgba="0.8 0.2 0.2 1" contype="0" conaffinity="0"/>
     </body>
   </worldbody>
   <actuator>
     <!-- DC motor, input = duty cycle in [-1, 1]. Force = G·duty − D·velocity (datasheet model). -->
     <general name="motor" joint="drive" ctrllimited="true" ctrlrange="-1 1"
-             gainprm="46.259231275335935" biastype="affine" biasprm="0 0 -41.78170257640064"/>
+             gainprm="30.83948751689063" biastype="affine" biasprm="0 0 -18.569645589511403"/>
   </actuator>
 </mujoco>
