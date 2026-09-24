@@ -35,6 +35,7 @@ pole:
   radius: 0.004            # m. 8 mm OD
   hub_mass: 0.010          # kg. clamp hub at the pivot (PLAN 1.2); rides with the cart
   pivot_damping: 2.0e-4    # N·m·s/rad. guess (two 608 bearings); fitted from free swing in Phase 4
+  pivot_coulomb: 0.0       # N·m. dry friction at joint 1 (e.g. a slip ring's brush drag). 0 = bearings only
 
 sim:
   timestep: 0.001          # s. physics step (PLAN 1.2)
@@ -45,10 +46,12 @@ sensing:                   # what the Pico will actually see (SPEC §9)
   angle_bits: 14               # AS5047P: 16384 counts per turn = 0.022° (SPEC §6)
   angle_noise_deg: 0.0         # std-dev; replaced by the measured value from PLAN 2.4
   velocity_filter_hz: 100.0    # velocities = finite difference, then a first-order low-pass at this cutoff
+  joint2_delay: 0.0            # s. extra lag on the joint-2 reading only (e.g. a wireless link); 0 = wired
 
 joint2:                    # double only: the joint at the top of rod 1 (SPEC §7)
   mass: 0.020              # kg. guess: two small bearings + AS5047P board + printed housing + short shaft
   damping: 1.0e-4          # N·m·s/rad. guess (small bearings)
+  coulomb: 0.0             # N·m. dry friction at joint 2
 
 pole2:                     # double only: the top rod, carbon fibre tube (SPEC §6 item 21)
   length: 0.20             # m. decided by SPEC §11 Q5

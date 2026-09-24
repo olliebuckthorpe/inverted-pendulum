@@ -124,7 +124,7 @@ def single_xml(p: dict, compliant: bool = False) -> str:
 
     pole_body = f"""
       <body name="pole" pos="0 0 0">
-        <joint name="hinge" type="hinge" axis="0 1 0" limited="false" damping="{q['pivot_damping']}"/>
+        <joint name="hinge" type="hinge" axis="0 1 0" limited="false" damping="{q['pivot_damping']}" frictionloss="{q.get('pivot_coulomb', 0.0)}"/>
         <geom name="hub" type="sphere" size="0.012" mass="{q['hub_mass']}" rgba="0.3 0.3 0.3 1"/>
         <geom name="pole" type="cylinder" fromto="0 0 0 0 0 {q['length']}" size="{q['radius']}"
               mass="{q['mass']}" rgba="0.8 0.8 0.85 1"/>
@@ -211,12 +211,12 @@ def double_xml(p: dict) -> str:
              frictionloss="{c['coulomb_friction'] + gearbox_drag(p)}"/>
       <geom name="cart" type="box" size="0.04 0.03 0.012" mass="{c['mass']}" rgba="0.15 0.35 0.25 1"/>
       <body name="pole" pos="0 0 0">
-        <joint name="hinge" type="hinge" axis="0 1 0" limited="false" damping="{q['pivot_damping']}"/>
+        <joint name="hinge" type="hinge" axis="0 1 0" limited="false" damping="{q['pivot_damping']}" frictionloss="{q.get('pivot_coulomb', 0.0)}"/>
         <geom name="hub" type="sphere" size="0.012" mass="{q['hub_mass']}" rgba="0.3 0.3 0.3 1"/>
         <geom name="pole" type="cylinder" fromto="0 0 0 0 0 {q['length']}" size="{q['radius']}"
               mass="{q['mass']}" rgba="0.8 0.8 0.85 1"/>
         <body name="pole2" pos="0 0 {q['length']}">
-          <joint name="hinge2" type="hinge" axis="0 1 0" limited="false" damping="{j2['damping']}"/>
+          <joint name="hinge2" type="hinge" axis="0 1 0" limited="false" damping="{j2['damping']}" frictionloss="{j2.get('coulomb', 0.0)}"/>
           <geom name="joint2" type="sphere" size="0.01" mass="{j2['mass']}" rgba="0.3 0.3 0.3 1"/>
           <geom name="pole2" type="cylinder" fromto="0 0 0 0 0 {q2['length']}" size="{q2['radius']}"
                 mass="{q2['mass']}" rgba="0.25 0.25 0.3 1"/>

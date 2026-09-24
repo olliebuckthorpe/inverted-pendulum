@@ -133,13 +133,16 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 
 **2.4 AS5047P over SPI.**
 - Read the 14-bit angle (with the parity/error-flag check) at 1 kHz and print it over USB.
-- **Also measure averaging** (sim/RESULTS-sim-phase.md, sensor section): the double swing-up needs ≈ 0.02° effective noise; the datasheet says 0.068°. Log the std-dev for 1, 4 and 16 back-to-back SPI reads averaged, with DAEC on and off. If 16 reads give ≈ 0.017°, the noise is independent and averaging works; if not, a Kalman filter is needed for the double swing-up.
+- **Also measure averaging** (sim/RESULTS-sim-phase.md, sensor section): log the std-dev for 1, 4 and 16 back-to-back SPI reads averaged, with DAEC on and off. The double swing-up uses a Kalman filter either way (it works at the datasheet 0.068°), but less noise means more margin, and the measured value goes into the sim.
 - **Done when:** rotating the shaft by hand gives a smooth 0–360° reading. With the shaft still, the noise is measured and logged (the std-dev in degrees goes in `analysis/sensor-noise.md`), including the averaging test.
 
 **2.5 USB protocol + latency** (`firmware/` + `sim/link.py`).
 - Binary packets with **COBS framing + CRC16**. Messages: TELEMETRY (Pico→Mac), COMMAND/MODE, PARAMS (gains, filter constants), WEIGHTS (the NN, chunked), HEARTBEAT.
 - **Measure the round-trip latency:** the Mac sends a timestamped ping, the Pico echoes it, 10,000 samples. Log the median, p99 and max in `analysis/usb-latency.md`.
 - **Done when:** telemetry streams at the loop rate into **PlotJuggler** (via a small Python bridge to UDP/JSON), and the latency numbers are recorded.
+
+**2.5b Slip-ring bench test (only if a hardware double swing-up is still planned; SPEC §3).** With the slip ring on a spare shaft: (1) measure its running drag torque (a known weight on a thread wound on the shaft, or the free-swing decay of rod 1 with and without the ring). It must be ≤ 2 mN·m. (2) Stream the AS5047P through it, via SPI and via ABI, while spinning it by hand for 10 minutes, and count bad frames (parity/error flags) or lost counts.
+- **Done when:** both numbers are in `hardware/slip-ring.md`, with a go / no-go for the slip ring. No-go → wireless (≤ 6 ms latency) or no hardware double swing-up.
 
 **2.6 Fixed-rate loop skeleton.**
 - A timer-driven loop at the rate chosen in 1.6 (Q4). It measures its own execution time and jitter and reports them in telemetry.
@@ -258,7 +261,7 @@ Choose the numbers from the sim so that neither controller is favoured. **Commit
 - **8.2** Update the double model with the Phase 4 fitted params plus the chosen link layout from 1.6 (Q5). Design the LQR for it (expect ~1 kHz; confirm the loop timing from 2.6 at that rate).
 - **8.3** Print joint 2 (light bearings, the AS5047P on top of rod 1, flexible wire along rod 1 secured with clips), then assemble. Run system ID on the new link (free swing) and refit.
 - **8.4** LQR double balance, started upright. **Done when:** ≥ 30 s balance plus a recovery from a light tap. **Film it.**
-- **Double swing-up:** already done in simulation during Phase 1 (trajectory optimisation + time-varying LQR + hand-over; `sim/double_trajopt.py`, `sim/double_control.py`). Re-plan the trajectory with the fitted model from 8.3. Hardware double swing-up only if Ollie has decided for it (SPEC §3).
+- **Double swing-up (Ollie: attempt on hardware, SPEC §3):** already working in simulation from Phase 1 (trajectory optimisation + time-varying LQR + Kalman filter + hand-over; `sim/double_trajopt.py`, `sim/double_control.py`). On hardware: (a) re-plan on the fitted model from 8.3 using the rule "duty ≤ 0.6, cart ±300 mm, joint-2 friction ×1.5" (`sim/plan_variant.py`); (b) implement the Kalman filter + TVLQR on the Pico (gains precomputed on the Mac, sent via PARAMS); (c) first test the plan's start in slow motion with the tapper arm clear; (d) **Done when:** ≥ 3 of 10 hardware swing-ups end balanced for 10 s, filmed. Any fewer by 1 Nov → report "double balances on hardware; swing-up shown in sim".
 - **8.5** Optional, only if 8.4 is done early: a double-balance SAC policy in sim (and on hardware if time allows).
 - **🚦 Sun 1 Nov: stop.** Whatever state it's in becomes "progress + what's next" in the write-up. Film what works.
 

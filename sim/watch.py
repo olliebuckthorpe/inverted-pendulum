@@ -62,7 +62,7 @@ def frames(m, d, log, fps):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("scenario", choices=["balance", "swingup", "tap", "double"])
-    ap.add_argument("--traj", default="30T_30-20")
+    ap.add_argument("--traj", default="30T_30-20_damping150_u60_x30")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--teeth", type=int, default=20)
     ap.add_argument("--length", type=float, default=0.30)
@@ -73,10 +73,21 @@ def main():
     if a.scenario == "double":
         import double_control
         import double_trajopt
-        teeth, rods = a.traj.split("_")
+        teeth, rods = a.traj.split("_")[:2]
         p = double_trajopt.layout_params(int(teeth[:-1]), *(int(v) / 100 for v in rods.split("-")))
         traj = double_trajopt.load(a.traj)
-        log = double_control.trial(p, traj, seconds=traj["T"] + a.seconds, seed=a.seed)["log"]
+        # Fly it as the real rig will see it: datasheet sensor noise, Kalman filter, 5 A supply limit.
+        # Plans named "..._damping150..." were made assuming 1.5x joint-2 friction; design on that model.
+        design = p
+        if "_damping" in a.traj:
+            factor = int(a.traj.split("_damping")[1].split("_")[0]) / 100
+            design = double_trajopt.model.with_params(p, joint2__damping=p["joint2"]["damping"] * factor)
+        p = double_trajopt.model.with_params(p, sensing__angle_noise_deg=0.068, supply__current_cap=5.0)
+        design = double_trajopt.model.with_params(design, sensing__angle_noise_deg=0.068, supply__current_cap=5.0)
+        g = double_control.tvlqr(design, traj, 500.0)
+        kf = double_control.kalman_gains(design, g)
+        log = double_control.trial(p, traj, rate_hz=500.0, seconds=traj["T"] + a.seconds, seed=a.seed,
+                                   gains=g, kf=kf)["log"]
         m = model.build_double(p)
     else:
         p = model.load_params(**{"drive.pulley_teeth": a.teeth, "pole.length": a.length})

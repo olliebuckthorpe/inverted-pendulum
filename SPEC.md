@@ -36,14 +36,19 @@ shows it's physically possible with this motor, rail and PSU (sim/RESULTS-sim-ph
 has been found that achieved it (the closest, Hackaday #12827, only did it in simulation). It stays behind the
 same gates: the single must be done first, then double balance, and **the double still stops on 1 Nov**. If
 the swing-up isn't working by then, the result is "double balances on hardware; swing-up shown in sim".
-What it needs beyond double balance:
-- joint 1 must spin freely with the joint-2 sensor on it: a **slip ring** (bench-test its friction and the
-  sensor signal through it early) or a **wireless** sensor. **Signal path: to decide.**
-- the double's masses and joint friction **measured, not guessed**: the sim's swing-up fails at ±25% joint-2
-  mass, +20% top-rod mass or 5× pivot friction;
-- a **state estimator** (e.g. a Kalman filter) instead of plain differencing: the sim's swing-up fails with
-  0.05° of random angle noise (balance survives it);
-- the trajectory **re-planned on the fitted model** (about 10 minutes of compute).
+What it needs beyond double balance (all found in the sim, 24 Sep; sim/RESULTS-sim-phase.md):
+- **A Kalman filter** on the Pico for the double (not plain differencing). With the AS5047P's datasheet noise
+  (0.068° RMS), differencing fails 0/10 and the Kalman filter succeeds 10/10. Its gains are precomputed on
+  the Mac, so the Pico only does small matrix-vector products.
+- **A "gentle, friction-margin" plan:** duty ≤ 0.6, cart within ±300 mm, planned assuming **1.5× the
+  measured joint-2 friction**. That plan swings up on 50/50 random rigs at realistic post-system-ID errors,
+  and 48/50 at twice those errors.
+- **The double's masses weighed and its joint friction measured** (free-swing decay), then the plan
+  recomputed on the fitted model (~10 min).
+- **Getting the joint-2 signal across a spinning joint 1:** a **slip ring with ≤ 2 mN·m of dry drag** (the sim
+  fails at 4 mN·m; cheap capsule rings don't publish it, so bench-measure it), or a **wireless link with
+  ≤ 6 ms latency** (the sim fails at 10 ms; ESP-NOW is around that edge). **Signal path: to decide after the
+  slip-ring bench test.**
 
 **Out of scope:** triple swing-up on hardware, a custom PCB, running the AI on the Mac
 in the loop, Isaac Sim, and hand-derived equations (optional later).

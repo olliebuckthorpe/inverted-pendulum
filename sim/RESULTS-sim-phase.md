@@ -7,7 +7,7 @@ won't work; it can't prove that something will (SPEC §11). Every number below w
 **Rig simulated:** MuJoCo at 1 kHz. The motor model comes from the Pololu 37D datasheet, including the rotor's
 reflected inertia. There's a 2 ms control delay, quantised sensors (400-count motor encoder, 14-bit angle),
 and velocities from filtered differencing, as the Pico will do. Code and tests are in `sim/`
-(`uv run pytest`: 16 tests).
+(`uv run pytest`: 18 tests).
 
 ## Answers at a glance
 
@@ -177,7 +177,7 @@ with programmable hysteresis (0–3 counts at 11-bit). Simulated at those noise 
 |---|---|---|
 | Single: swing-up + balance | 10/10, largest tap 3.52 rad/s (vs 3.60 noise-free); fine even at 0.1° | Nothing extra |
 | Double: balance | 5/5 at 500 Hz; **0/5 at 1 kHz** (differencing noise doubles) | Run double balance at 500 Hz, or use a better estimator |
-| Double: swing-up | **0/5** at 0.068°, 0.052° and 0.034° | Effective noise ≈ 0.02°: 5/5 at 0.017° |
+| Double: swing-up | **0/5** at 0.068°, 0.052° and 0.034° with plain differencing | **Solved with a Kalman filter: 10/10 at 0.068°** (see the next section) |
 
 **Ways to get the double swing-up to ≈ 0.02°:** (1) read the angle ~16 times per control cycle over SPI and
 average; that cuts noise 4× **if** the noise is independent between reads, which the datasheet doesn't say,
@@ -186,6 +186,44 @@ the model to reject noise (not yet built or tested). The single needs neither.
 
 The motor encoder (64 CPR × 6.3 = 403 counts/rev → 0.15 mm on 30T) is already modelled in every run above,
 and the end-stops only carry relay-coil current, so neither needs changing.
+
+## Making the double swing-up work with the ordered sensors (24 Sep, later)
+
+Everything below uses the AS5047P datasheet noise (0.068° RMS) and the 5 A supply limit, at 500 Hz.
+
+1. **Where it failed:** during the swing-up, not at the hand-over. Differenced velocities are so noisy that
+   the motor spent 64% of the swing-up at full duty (28% noise-free), lost the plan by 20–30°, and ran into
+   the rail.
+2. **Fix 1, a Kalman filter** (`double_control.kalman_gains`, `SwingUpThenBalanceKF`): it estimates all six
+   states from the three position readings using the model and the command actually sent. Gains are
+   precomputed along the plan, so it's cheap on a Pico. Result: **10/10 at 0.068°, 10/10 at 0.10°, 8/10 at
+   0.15°** (differencing: 0/10 at all three). Full-duty time fell to 8–10%.
+3. **What was left: model error.** One parameter at a time at its expected post-system-ID error, only
+   **joint-2 friction** mattered: +15% OK, +20% fails, −50% OK. A 15 g top rod loses a large share of its
+   energy to a tiny extra drag.
+4. **Fix 2, plan gently and against extra friction** (`plan_variant.py`): duty ≤ 0.6, cart ±300 mm, joint-2
+   friction assumed ×1.5. Monte Carlo over random rigs with **every** parameter wrong at once
+   (`double_montecarlo.py`; masses ±2%, Kt ±10%, rotor ±15%, frictions ±30%, delay 1–4 ms):
+
+| Plan | Post-sysid errors (50 rigs) | ×1.5 errors | ×2 errors |
+|---|---|---|---|
+| Original (duty 0.8, ±350 mm) | 19/30 | 16/30 | – |
+| Gentle (duty 0.6, ±300 mm) | 45/50 | 37/50 | – |
+| Friction margin ×1.3 only | 43/50 | 35/50 | – |
+| **Gentle + joint-2 friction ×1.3** | **50/50** | **50/50** | 48/50 |
+| **Gentle + joint-2 friction ×1.5 (chosen)** | **50/50** | **50/50** | 48/50 |
+
+   The chosen plan also survives every large single error that broke the original (rotor ×1.4, Kt −20%,
+   joint-2 mass ±25%, top rod +20%), a 4 ms delay, starts up to ±11° off hanging, 1 kHz (30/30), and joint
+   friction on both joints from ×0.5 to ×1.5 (×2: 2/5).
+5. **How to get the joint-2 signal off the spinning rod:**
+   - **Slip ring:** the swing-up tolerates **≤ 2 mN·m** of dry drag at joint 1 (fails at 4 mN·m).
+     Bench-measure before trusting one (PLAN 2.5b).
+   - **Wireless:** the swing-up tolerates the joint-2 reading being **≤ 6 ms** late (fails at 10 ms). ESP-NOW
+     is around that edge, so it would need a delay-aware Kalman filter (not built yet).
+
+Video: `videos/double-30T_30-20_damping150_u60_x30-seed0.mp4` (noise, Kalman filter, 5 A limit), or live:
+`./watch.sh double`.
 
 ## Numbers that are guesses (replace in Phase 4)
 

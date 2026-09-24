@@ -195,6 +195,7 @@ class DoublePlant:
         self.alpha = self.ctrl_dt / (self.ctrl_dt + 1 / (2 * math.pi * s["velocity_filter_hz"]))
         self.cap = p["supply"]["current_cap"]
         self.noise = math.radians(s["angle_noise_deg"])
+        self.a2_lag = round(s.get("joint2_delay", 0.0) / self.ctrl_dt)  # control cycles of extra joint-2 lag
         self.rng = np.random.default_rng(seed)
 
     def reset(self, q=(0.0, math.pi, 0.0), qd=(0.0, 0.0, 0.0)):
@@ -205,9 +206,12 @@ class DoublePlant:
         self.pos = self.prev.copy()   # continuous (unwrapped) measured positions
         self.vel = np.zeros(3)
         self.queue = deque([0.0] * self.delay_steps)
+        self.a2_hist = deque([q[2]] * (self.a2_lag + 1), maxlen=self.a2_lag + 1)
 
     def measure(self) -> np.ndarray:
         raw = np.array(self.d.qpos[:3])
+        self.a2_hist.append(raw[2])
+        raw[2] = self.a2_hist[0]  # a wireless joint-2 sensor reports an older angle
         if self.noise:
             raw[1:] += self.rng.normal(0, self.noise, 2)
         # the angle sensors only report 0..2π: wrap them, then unwrap by accumulating the change
