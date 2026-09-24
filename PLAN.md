@@ -123,6 +123,7 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 
 **2.2 CAD + prints** (`hardware/`, keep the STEP/STL files in git).
 - Parts: the cart (mounts on the MGN12H; holds two 608s for joint 1 and the AS5047P board 1–1.5 mm from the shaft end, **adjustable**, e.g. slotted holes or shims); the motor end block (motor mount + 20T/30T pulley); the idler end block; a belt clamp on the cart; the rod hub (clamps the 8 mm tube to the shaft); end-stop mounts at both ends; the E-stop enclosure.
+- **Leave room for a slip ring on joint 1** (SPEC §3: a hardware double swing-up is an open decision): the magnet stays on one shaft end, and the far shaft end gets a mounting point for a 12–22 mm capsule slip ring (rotor coupled to the shaft, body clamped to the cart). Costs nothing now and avoids reprinting the cart later.
 - Keep the cart light (infill ~20–30%, no bulky walls). Weigh every printed part and log it in `sim/params.yaml`.
 - **Done when:** the cart slides the full rail by hand without binding, the shaft spins freely in both bearings, and the magnet sits centred on the sensor.
 
@@ -256,6 +257,7 @@ Choose the numbers from the sim so that neither controller is favoured. **Commit
 - **8.2** Update the double model with the Phase 4 fitted params plus the chosen link layout from 1.6 (Q5). Design the LQR for it (expect ~1 kHz; confirm the loop timing from 2.6 at that rate).
 - **8.3** Print joint 2 (light bearings, the AS5047P on top of rod 1, flexible wire along rod 1 secured with clips), then assemble. Run system ID on the new link (free swing) and refit.
 - **8.4** LQR double balance, started upright. **Done when:** ≥ 30 s balance plus a recovery from a light tap. **Film it.**
+- **Double swing-up:** already done in simulation during Phase 1 (trajectory optimisation + time-varying LQR + hand-over; `sim/double_trajopt.py`, `sim/double_control.py`). Re-plan the trajectory with the fitted model from 8.3. Hardware double swing-up only if Ollie has decided for it (SPEC §3).
 - **8.5** Optional, only if 8.4 is done early: a double-balance SAC policy in sim (and on hardware if time allows).
 - **🚦 Sun 1 Nov: stop.** Whatever state it's in becomes "progress + what's next" in the write-up. Film what works.
 
