@@ -1,0 +1,360 @@
+# SPEC — Classical Control vs AI: an Inverted Pendulum on a Cart
+
+Written 2026-09-24. Owner: Ollie Buckthorpe. Status: **agreed spec, no code, nothing bought yet.**
+
+This is the contract. Every later session builds from this file. If something here turns out to be wrong,
+change this file first, then the plan, then the code. Decisions were made in question rounds with Ollie and are
+evidence-based; sources are listed in §17.
+
+---
+
+## 1. One line
+
+A self-built inverted pendulum on a belt-driven cart, balanced and swung up **two ways**, with classical
+control (energy-pumping swing-up + LQR) and with AI (two SAC policies trained in MuJoCo), then compared
+head-to-head on the same real hardware using a test set fixed in advance.
+
+## 2. Why
+
+- **The Academy application** (theacademysf.com), **deadline 5 November 2026**.
+- The portfolio already shows software and traction (Upshow), business (Young Enterprise: £1,600 revenue)
+  and physical making (a 3D-printed F1 wing). It lacks **hard engineering**: electronics, maths and control.
+  This project fills that gap and brings in AI.
+- **It must look finished on the application.** Pitch it as a complete study ("classical vs AI on real
+  hardware"), never as "stage 1 of 3".
+
+## 3. Scope
+
+| Tier | What | Status by 5 Nov |
+|---|---|---|
+| **Must have** | **Single rod**: classical and AI both swing up and balance on the real rig; the full test set is run; filmed | Required |
+| **Stretch** | **Double rod**: balances on the real rig (started upright by hand; no double swing-up). LQR on hardware, with AI in simulation and possibly on hardware | Only after the single is done. **Hard stop 1 Nov** |
+| **Reach** | Triple | **Out of scope before 5 Nov.** "What's next" in the write-up |
+
+**Out of scope:** double or triple swing-up on hardware, slip rings, a custom PCB, running the AI on the Mac
+in the loop, Isaac Sim, and hand-derived equations (optional later).
+
+## 4. Definition of done
+
+**The single is done when all of these are true:**
+1. Classical (energy swing-up → LQR) swings up from hanging and balances on the real rig.
+2. The AI (swing-up policy → hand-over → balance policy) swings up and balances on the real rig.
+3. The full test set in §12 has been run for both, with the raw data logged.
+4. The scorecard chart exists.
+5. Every milestone has been filmed, and a paragraph written on the same day.
+
+**Gate:** the double starts only after the single is done. **The double stops on 1 Nov** whatever state it's in.
+2–5 Nov are for the videos, the project page, the README and submission.
+
+## 5. System overview
+
+```
+ Mac (Python)                                   Pico 2 (Arduino C++)                  Rig
+ ─────────────                                  ────────────────────                  ───
+ MuJoCo sim + motor model                       fixed-rate control loop               Pololu 37D motor + encoder ──► belt ──► cart on MGN12 rail
+ System ID (fit sim to recordings)   USB CDC    ├─ read motor encoder (PIO)  ◄──────  (cart position)
+ LQR design (python-control/scipy)  ◄───────►   ├─ read AS5047P (SPI)        ◄──────  magnet on joint 1 shaft (rod angle)
+ SB3 SAC training (Mac/Windows)     binary+COBS ├─ controller: LQR | energy | NN
+ Export gains + NN weights ────────────────►    ├─ safety: watchdog, soft limits
+ Test runner + logging ◄── telemetry ───────    └─ PWM + DIR ────────────────────►   Cytron MD13S ──► motor
+ PlotJuggler (live)                                                                   12 V PSU → fuse → E-stop + end-stops → driver
+```
+
+**Key architectural decision: the control loop runs entirely on the Pico**, for both controllers. The Mac
+designs and trains, then sends numbers (LQR gains, NN weights) to the Pico, and receives telemetry. Evidence:
+ferrolho's pendulum ran a 689-parameter NN on an Arduino Nano; Re-Forward ran its policy on an STM32; the only
+PC-in-the-loop double (Hackaday #12827) needed special networking code to reach 2 kHz. The Pico 2 (RP2350) has a
+hardware FPU.
+
+## 6. Hardware
+
+Prices were checked 2026-09-24. ✅ = confirmed on the seller's page; ⚠️ = search snippet or unconfirmed, so
+**re-check at checkout**. **Order everything except the motor now; order the motor after the sim phase (§11).**
+
+| # | Part | Spec to match | Qty | Seller (UK) | Price | Buy |
+|---|---|---|---|---|---|---|
+| 1 | Linear rail | **MGN12, 1000 mm, with 1× MGN12H carriage** (clone OK) | 1 | eBay UK, CNC-Planet | ⚠️ £11.95 base; **1000 mm price unconfirmed** (~£12–20) | Now |
+| 2 | Timing belt | GT2, **6 mm wide**, ~2.5 m | 1 | Technobots | ✅ £4.63 | Now |
+| 3 | Drive pulley | GT2 **20T, 6 mm bore**, 6 mm belt | 1 | Gears & Sprockets | ✅ £1.78 | Now |
+| 4 | Drive pulley | GT2 **30T, 6 mm bore**, 6 mm belt | 1 | Gears & Sprockets | ✅ £2.63 | Now |
+| 5 | Idler | GT2 20T idler, 5 mm bore (or bearings for a printed idler) | 1 | Technobots | ⚠️ ~£2.02 | Now |
+| 6 | Controller | **Raspberry Pi Pico 2 H** (with headers) | 1 | The Pi Hut | ✅ £5.80 | Now |
+| 7 | Angle sensor | **ams-OSRAM AS5047P-TS_EK_AB** adapter kit (14-bit SPI; **includes a 6×2.5 mm diametric magnet**) | 1 now, +1 for the double | Farnell / RS / Mouser UK | ⚠️ ~£13–17 (Digi-Key $16.66) | Now (2nd later) |
+| 8 | Motor driver | **Cytron MD13S** (6–30 V, 13 A, 3.3 V logic OK) | 1 | Active Robots (or RobotBits) | ⚠️ ~£15 (VAT status unclear) | Now |
+| 9 | Power supply | **Mean Well GST60A12-P1J**, 12 V 5 A, enclosed | 1 | **RS UK** (sold out at The Pi Hut) | ✅ £25.91 inc VAT | Now |
+| 10 | Barrel jack adapter | 2.1 mm DC jack → screw terminals | 1 | Pi Hut / Amazon | ⚠️ ~£2–3 | Now |
+| 11 | Bearings | 608ZZ (8 mm bore), pack of 10 | 1 pack | Amazon UK | ✅ £5.58 | Now |
+| 12 | Joint shaft | 8 mm silver steel, single cut length ~150–300 mm | 1 | eBay UK (not RS: 3 m minimum) | ⚠️ ~£5–6 | Now |
+| 13 | Rod | **Aluminium tube, 8 mm OD, 1 m** (cut to 30 cm, with spare for a 40 cm) | 1 | Wickes | ✅ £4.20 | Now |
+| 14 | E-stop | Latching mushroom switch, ≥10 A DC | 1 | Amazon UK | ⚠️ ~£8.49–9.99 | Now |
+| 15 | End-stops | Micro limit switch, roller lever, pack of 10 | 1 pack | Amazon UK | ✅ £6.99 | Now |
+| 16 | Fuse | Inline blade fuse holders + mixed fuses (use **7.5 A**) | 1 kit | Amazon UK | ✅ £7.99 | Now |
+| 17 | Wiring | 18 AWG silicone red/black; Dupont jumpers; small breadboard | – | Amazon UK | ✅ £6.74 / ✅ £6.99 / ⚠️ ~£7.99 | Now (skip anything already owned) |
+| 18 | Fasteners | M3/M5 bolt and nut assortment | 1 | Amazon UK | ✅ £7.99 | Now (skip if owned) |
+| 19 | **Motor** | **Pololu 37D, 6.3:1, 12 V, with 64 CPR encoder (helical pinion)**: 1600 RPM, 0.294 N·m stall, 5.5 A stall, 400 CPR at output, 6 mm D-shaft | 1 | Cheapest UK/EU source (Pololu list $60.95; Opencircuit €82.30) | ⚠️ ~£55–70 | **After the sim phase** |
+| 20 | Tapper servo | Small hobby servo (for the push tapper) | 1 | – | ⚠️ ~£3–5 | During the build |
+| 21 | Top rod (double) | Carbon fibre tube, ~8 mm | 1 | eBay UK | ⚠️ ~£5–15 | Only for the double |
+
+### Budget (honest)
+
+| | Low | High |
+|---|---|---|
+| Items 1–18 (order now) | ~£153 | ~£171 |
+| Motor (item 19) | ~£55 | ~£70 |
+| Servo (item 20) | ~£3 | ~£5 |
+| **Upfront total** | **~£211** | **~£246** |
+| Later, for the double: 2nd AS5047P + carbon rod | +~£18 | +~£32 |
+
+⚠️ **This is over the £150–200 target, by about £11–46.** Ways to close the gap, in order:
+1. **Skip what's already owned** (breadboard, jumpers, bolts, wire): up to ~£30.
+2. **Find the cheapest Pololu seller**: ~£5–15.
+3. Print the idler around bearings already in the 608 pack. The 3D printer also replaces every bracket.
+
+Do **not** save money on the rail, motor or sensor. Those are where precision decides whether it works.
+
+### Why each major part (evidence summary)
+
+- **Motor:** every documented double used a DC servo or linear motor, never an open-loop stepper. The only
+  documented open-loop stepper cart was jerky. The Pololu has documented specs; its gearbox play is unpublished
+  (a Pololu forum post says "expect a couple of degrees"; a customer measured ~1°).
+- **Rail:** MGN12 was used in the RunTheBot double. V-slot builds reported friction (ZIPY). Rods sag at 1 m.
+- **Sensor:** single builds worked at 0.15–0.25°/count; the documented double used 0.018°. The AS5047P gives
+  0.022°, uses SPI (fast), and the kit includes the correct magnet. The MT6701 was rejected: no UK-stock board
+  exposes SSI. The AS5600 was rejected: I2C only, 0.088°, and there's a forum report of DC-motor noise.
+- **Pico 2:** has an FPU, PIO for jitter-free encoder decoding, and confirmed support in the Arduino-Pico core.
+- **Driver:** the Cytron accepts 3.3 V logic. The BTS7960 was rejected (uncertain at 3.3 V) and the L298N
+  (a ~2 V voltage drop).
+- **PSU:** an enclosed brick is beginner-safe. The PC's ATX supply was rejected (it's in a working PC, needed
+  for weeks, and the saving was only ~£10–15).
+
+## 7. Mechanical design
+
+- **Rail:** 1 m MGN12, bolted flat to a rigid base, with printed end blocks holding the motor and idler.
+- **Cart:** 3D-printed and **as light as possible** (less mass means less force needed). It carries joint 1
+  and its sensor.
+- **Drive:** GT2 6 mm belt, a metal pulley on the motor, and the idler at the far end. **Both 20T and 30T
+  pulleys are bought; the sim picks** (20T: ~46 N stall, 1.07 m/s; 30T: ~31 N, 1.60 m/s. Calculated from
+  specs, not measured).
+- **Joint 1:** an 8 mm shaft through **two 608 bearings** in the cart. Two bearings stop the shaft tilting;
+  one lets it bind and misaligns the sensor. The diametric magnet is glued to the shaft end, and the
+  **AS5047P is fixed to the cart 1–1.5 mm from it**. The sensor doesn't rotate, so **the rod can spin
+  continuously for swing-up with no slip ring**.
+- **Rod 1:** **30 cm aluminium tube** (falls in about 0.14 s, a moderate middle ground). Spare tube allows a
+  40 cm rod if needed.
+- **Joint 2 (double only):** mounted on top of rod 1, with smaller and lighter bearings. The second AS5047P
+  rides on rod 1, and flexible wires run along it. That's fine because the double only balances, so the joint
+  moves through a limited arc. The top rod is carbon fibre. **Rod lengths and which goes at the bottom are
+  decided in sim.** Quanser's lab double uses 33.65 cm and 20.0 cm links, but doesn't document which is at the
+  bottom.
+- **Tapper:** a servo swings a printed hammer into the rod, for repeatable physical pushes (§12).
+
+## 8. Electronics and safety wiring
+
+- **Power path:** PSU (12 V) → **7.5 A inline fuse** → **latching E-stop** → **end-stop switches (normally
+  closed, in series)** → Cytron MD13S → motor. The E-stop and end-stops cut motor power **independently of any
+  software**.
+- **Logic:** the Pico 2 is powered by USB from the Mac. PWM + DIR go to the Cytron. The motor encoder A/B lines
+  go to the Pico, decoded by PIO. The AS5047P connects over SPI. Every ground is shared.
+- **Also:** the end-stop states are read by the Pico so it can report *why* it stopped.
+- **To confirm in the plan:** the Cytron MD13S's exact 3.3 V input thresholds, from its datasheet.
+- **Known issue to handle:** hard braking makes the motor act as a generator and push energy back into the
+  supply. Decide on the mitigation in the plan (for example a bulk capacitor or TVS diode) after reading the
+  Cytron and Mean Well datasheets.
+
+## 9. Firmware (Pico 2, Arduino-style C++ on the arduino-pico core)
+
+**Responsibilities:**
+1. **Fixed-rate control loop.** Target ~500 Hz for the single and ~1 kHz for the double. **Final rates come
+   from the sim phase.** The AI policy decides at **50–100 Hz** (the evidence-supported range for real
+   cart-pole RL), with its output held between decisions.
+2. **Sensing:** motor encoder via PIO (starting from Raspberry Pi's `pico-examples` quadrature encoder);
+   AS5047P via SPI; the velocities are estimated.
+3. **Controller modes:**
+   - `IDLE`
+   - `CLASSICAL`: energy-pumping swing-up → LQR once near upright (hand-over rule in §10)
+   - `AI`: swing-up policy → balance policy (hand-over rule in §10)
+   - `LQR_ONLY`: for started-upright tests and the double
+   - `SYSID`: plays prerecorded motor voltage sequences and logs the response
+   - `KICK`: applies a software disturbance of a set size
+4. **NN inference:** a small MLP (size fixed in the plan, e.g. 2 × 64). The weights are sent from the Mac and
+   stored on the Pico. Written as plain matrix multiplication.
+5. **Safety, on the Pico and not the Mac:**
+   - **Heartbeat watchdog:** the motor is off if no valid heartbeat arrives from the Mac within **100 ms**
+     (the WPILib motor-safety default).
+   - **Hardware watchdog:** resets the Pico if the firmware hangs, and the motor is off on boot.
+   - **Soft travel limits:** the motor is off when the cart nears the rail ends.
+   - **Fall detection:** the motor is off in balance modes when the angle goes beyond the recoverable limit.
+   - **Output clamp:** a maximum duty cycle and a maximum rate of change.
+6. **Telemetry:** timestamp, cart position and velocity, angle(s) and velocities, motor command, mode, and
+   fault flags, streamed to the Mac.
+
+## 10. Mac-side software (Python; long training on the Windows PC)
+
+- **Simulator:** **MuJoCo**, starting from Gymnasium's `InvertedPendulum-v5` and `InvertedDoublePendulum-v5`
+  models, which are cart-based. They're edited to match the real rig's masses, lengths, rail limits and motor.
+  The stock tasks are balance-only, so **swing-up needs a custom environment and reward**. A hand-written
+  simulator is optional later, as a cross-check.
+- **Motor model:** a DC motor model, first from the Pololu datasheet (stall torque, no-load speed, stall
+  current), then **fitted to recordings from the real rig**. That's system identification, done in `SYSID`
+  mode.
+- **Classical control:**
+  - LQR designed with `python-control` or `scipy.linalg.solve_continuous_are`, from a model linearised at the
+    upright position (sympy or MuJoCo can supply it).
+  - Energy-pumping swing-up following Tedrake's *Underactuated Robotics* (MIT).
+  - Hand-over to LQR inside its region of attraction.
+- **AI:** **Stable-Baselines3, SAC**, running on CPU (SB3's own guidance for small MLP policies).
+  - **Two policies:** swing-up and balance, with a hand-over, following Xu & Tran (June 2026), who did zero-shot
+    sim-to-real swing-up this way on a real cart-pole.
+  - **Sim-to-real techniques, all required:**
+    - **Domain randomisation** of masses, friction, motor constants, gearbox play and sensor noise.
+    - A **first-order action-smoothing filter**, also applied on the Pico. It prevents bang-bang
+      actuation, the widely reported failure mode.
+    - **Modelled control delay.**
+    - **The motor model fitted from system ID.**
+  - Training is expected to take **hours to days for swing-up**. Balance is quick.
+- **Communication with the Pico:** USB CDC serial, **binary packets with COBS framing and a checksum**.
+  Messages: telemetry, commands/mode, parameter upload (gains, NN weights), heartbeat.
+  **Measure the round-trip latency early**; no published figure exists for the RP2350 over USB CDC.
+- **Test runner:** runs the §12 test set automatically, then logs every trial and computes the metrics.
+- **Visualisation:** **PlotJuggler** for live tuning. A **React project page** is the presentation (§13).
+
+## 11. The simulation phase (first 3–5 days, before ordering the motor)
+
+The sim is built from the motor's datasheet. It answers, in this order:
+1. **Is the Pololu 37D 6.3:1 strong and fast enough** to swing up a 30 cm aluminium rod within ~1 m of rail?
+   → If yes, **order the motor**.
+2. **20T or 30T pulley?**
+3. **Is 30 cm a sensible length**, or does 40 cm clearly help?
+4. **What loop rates are needed** for the single, and for the double?
+5. **For the double: which rod lengths, and which is at the bottom?**
+
+**Time-box rule:** if an answer isn't clear by day 5, use the default (Pololu, 20T, 30 cm) and order anyway.
+The sim phase must not eat into hardware time. A datasheet-only sim is optimistic: it can show "clearly won't
+work" early, but only real hardware can confirm "works".
+
+## 12. Test protocol (fixed before any real results)
+
+Both controllers run on the **same Pico, same rig, same day, same rod**. Each runs at its designed rate, and
+**the rates are reported openly**. Trials alternate between controllers so that drift (belt tension,
+temperature) affects both equally.
+
+**Disturbances:**
+- **Software kicks** (most trials): a fixed cart jolt, in a ladder of increasing sizes.
+- **Physical tapper** (the physical test and the video): the servo hammer strikes the rod. Tap consistency
+  is checked before use.
+
+**Core metrics:**
+
+| Metric | Definition | Trials |
+|---|---|---|
+| **Swing-up success rate** | Hanging at rest → balanced within the time limit, and held for the hold time | **20 per controller** |
+| **Settling time** | After a standard kick, the time until the angle stays within the settle band | 20 per controller |
+| **Largest push survived** | The biggest rung on the kick ladder recovered in **≥ 8 of 10** attempts | 10 per rung |
+| **Motor effort** | Mean absolute (or RMS) motor command during settling | From the trials above |
+
+**Numbers to fix before the first hardware trial:** time limit, hold time, settle band, and the kick ladder's
+sizes. Choose them from the sim; they then **may not change** after real results are seen.
+
+**Honest reporting:** report every trial, including failures, plus the loop rates, the sim-to-real steps
+used, and anything that was tuned on hardware.
+
+## 13. Presentation deliverables
+
+- **Two videos:**
+  - **~60 s highlight, results first:** swing-up, a push recovery, the scorecard.
+  - **Longer technical cut:** the build, how each controller works, sim-to-real, the test results, and what's
+    next (the double/triple).
+- **Headline chart: a scorecard** of the four core metrics, classical vs AI side by side.
+- **Public GitHub repo** with a strong README: the story, the scorecard, embedded clips, how to build it, and a
+  bill of materials.
+- **A React project page:** build its skeleton early (e.g. during overnight training runs), with empty slots
+  for results and clips. Fill it in during 2–5 Nov.
+- **Film and write as you go:** every milestone gets filmed, with a paragraph written the same day.
+
+## 14. Timeline (milestones; the plan breaks these into days)
+
+| Dates | Milestone |
+|---|---|
+| **Thu 24 – Mon 28 Sep** | Order everything except the motor. Sim phase (§11): MuJoCo model, datasheet motor model, answers 1–5. Learn the basics: Brunton's *Control Bootcamp*, Python. **Order the motor** by about 28 Sep |
+| Parts arrive, ~26–30 Sep | Print the cart, end blocks and joint housings. Pico bring-up: blink → AS5047P over SPI → motor encoder over PIO → USB telemetry → **measure the latency** |
+| ~1–7 Oct | Motor arrives. Assemble the rig. **Safety first:** fuse, E-stop, end-stops, watchdog. Run system ID and fit the sim |
+| ~8–14 Oct | LQR balance (started upright) → energy swing-up → **classical complete**. Train the AI in the fitted sim |
+| ~15–21 Oct | AI balance on hardware → AI swing-up + hand-over. Build the tapper. **Run the full test set.** → **Single DONE** (target ~21 Oct) |
+| ~22 Oct – **1 Nov** | **Double (stretch):** sim the rod layout → buy the 2nd AS5047P + carbon rod → build → LQR balance. **Hard stop 1 Nov** |
+| **2 – 5 Nov** | Edit both videos, finish the React page and README, submit |
+
+## 15. Risks
+
+| Risk | Mitigation |
+|---|---|
+| Sim-to-real gap: the AI works in sim, fails on the rig | System ID, domain randomisation, action smoothing, delay modelling (§10). **Classical is the fallback result**: the comparison still stands if the AI underperforms, and the finding is still honest |
+| Swing-up training takes days | Start training as soon as the fitted sim exists. Use the Windows PC for long runs. Train balance first (quick) |
+| Motor too weak or slow | Checked in the sim phase **before** buying. The 20T/30T pulley swap trades force for speed |
+| Gearbox play (~1–2°) | Measure it with the encoders. Model it in domain randomisation. It matters most for the double |
+| Sensor noise from the motor | Short, separated sensor wiring. The SPI sensor is chosen partly for this. Filtering |
+| USB latency or jitter | Control runs on the Pico; the Mac isn't in the loop. Measure latency on day 1 of bring-up |
+| Pico control-loop timing | PIO for the encoder; keep the NN small and **benchmark its inference time** early |
+| Parts delay or stock-outs | UK stock only. Alternatives noted (RS for the PSU, RobotBits for the driver) |
+| Budget overrun (~£11–46 over) | §6 savings; skip anything already owned |
+| The double stalls | Gated behind a finished single, with a hard stop on 1 Nov. The single alone is a complete result |
+| Presentation rushed | Film and write as you go; build the React page skeleton early; 2–5 Nov protected |
+| Safety: fast cart, pinch points | Hardware E-stop and end-stops cut power independently of software, plus the Pico watchdog, soft limits, fall detection and output clamps. Keep hands clear during runs |
+
+## 16. Roads not taken (and when to revisit)
+
+| Rejected | Why | Revisit if |
+|---|---|---|
+| Other projects (room sensor, reaction-wheel cube, wind tunnel, …) | The room sensor needs a pilot site and is a mature market; the cube's fallback (edge balance) is a beginner build | This project is abandoned |
+| Rotary (Furuta) pendulum | A triple is barely documented; the cart matches the goal | Space or budget force it |
+| Open-loop stepper | Thin evidence (one jerky single, no doubles); missed steps | Never for this build |
+| Closed-loop stepper | £90–130, no pendulum precedent | – |
+| BLDC + ODrive | Over budget; hardest setup | Going for the triple after the deadline |
+| JGB37-520 motor | Unknown gearbox play and variable quality (it was the cheaper fallback) | The Pololu is unavailable |
+| V-slot / steel rods | Friction (ZIPY) / sag at 1 m | – |
+| MT6701 | No UK-stock SSI board; the China listing arrives 22–28 Oct | A UK SSI board appears |
+| AS5600 | I2C, 0.088°, motor-noise report | Budget emergency, single only |
+| Mac in the loop | Unmeasured latency and jitter; risky for the double | Early quick experiments only |
+| JavaScript on the Pico (Kaluma) | Interpreted, GC pauses, no control-loop evidence. DeviceScript is archived | – |
+| MicroPython | GC jitter, no 1 kHz evidence | – |
+| PPO / CleanRL | Chose SAC: sample-efficient, suits continuous control and hardware fine-tuning | SAC won't train |
+| One policy for swing-up + balance | Less evidence on hardware; two policies mirror the classical structure | Two policies can't hand over cleanly |
+| PC (ATX) power supply | In a working PC, needed for weeks, small saving | – |
+| Buy everything after the sim | Loses ~a week of parallel build time | – |
+
+## 17. Evidence and sources
+
+- Double pendulum cart (DC servo, V-slot, 5000-line encoders, STM32, 2 kHz): https://hackaday.io/project/12827-double-pendulum-cart
+- ZIPY cart-pole (DC motor + belt, V-slot friction fix, ~61 cm rod): https://blog.benwiener.com/programming/2018/05/10/cart-pole.html
+- Open-loop stepper cart (jerky motion): https://hackaday.io/project/181812-inverted-pendulum-on-a-cart
+- Single LQR cart with AS5600: https://github.com/GabrielRhys/Single-Inverted-Pendulum-w-LQR
+- Double on MGN12: https://github.com/RunTheBot/Inverted-pendulum
+- zjor cart (Arduino + Python): https://www.hackster.io/zjor/inverted-pendulum-on-a-cart-199d6f
+- Utah double (never achieved stable control): https://amir-yazdani.github.io/project/inv_pendulum/
+- DIVA double inverted pendulum thesis (Maxon DC motor): https://www.diva-portal.org/smash/get/diva2:827020/FULLTEXT01.pdf
+- TU Wien triple swing-up (linear motor, backlash-free), Glück, Eder & Kugi 2013: https://www.acin.tuwien.ac.at/file/publications/cds/pre_post_print/glueck2013.pdf
+- Multi-arm pendulum on a cart benchmark: https://arxiv.org/abs/2205.06231
+- Xu & Tran 2026, zero-shot sim-to-real cart-pole swing-up (action smoothing, domain randomisation, two policies): https://arxiv.org/abs/2606.22145
+- ferrolho rotary pendulum (MuJoCo → hardware, 689-param NN on an Arduino Nano): https://github.com/ferrolho/rotary-inverted-pendulum
+- Re-Forward (RL on STM32): https://github.com/kartman88/Re-Forward
+- Gymnasium MuJoCo InvertedPendulum / InvertedDoublePendulum: https://gymnasium.farama.org/environments/mujoco/inverted_pendulum/
+- Stable-Baselines3 PPO/SAC docs (CPU guidance): https://stable-baselines3.readthedocs.io/
+- Tedrake, *Underactuated Robotics* (energy swing-up + LQR): https://underactuated.mit.edu/
+- Pololu 37D 6.3:1 12 V with encoder: https://www.pololu.com/product/4757 · backlash forum: https://forum.pololu.com/t/backlash-37d-gear-motor-with-19-1-ratio/7777
+- Quanser linear double inverted pendulum (33.65 cm / 20.0 cm links): https://www.quanser.com/products/linear-double-inverted-pendulum/
+- Arduino-Pico core (RP2350 support): https://github.com/earlephilhower/arduino-pico
+- Pico PIO quadrature encoder: https://github.com/raspberrypi/pico-examples/blob/master/pio/quadrature_encoder/quadrature_encoder.pio
+- SimpleFOC MT6701 driver (I2C too slow for control): https://github.com/simplefoc/Arduino-FOC-drivers/blob/master/src/encoders/mt6701/README.md
+- AS5047P adapter kit (magnet included): https://uk.farnell.com/ams-osram-group/as5047p-ts-ek-ab/adapter-board-kit-position-sensor/dp/4158644
+- WPILib motor safety (100 ms watchdog): https://docs.wpilib.org/en/2023_a/docs/software/hardware-apis/motors/wpi-drive-classes.html
+- COBS framing: https://blog.mbedded.ninja/programming/serialization-formats/consistent-overhead-byte-stuffing/
+- DeviceScript archived: https://github.com/microsoft/devicescript · Kaluma: https://kalumajs.org/
+
+## 18. Open items for the plan
+
+- Confirm ⚠️ prices at checkout: rail at 1000 mm, AS5047P kit, MD13S VAT, E-stop, shaft.
+- The Cytron MD13S's 3.3 V input thresholds, and the regenerative-braking mitigation (datasheets).
+- NN size and its inference-time benchmark on the RP2350.
+- The hand-over rules (classical and AI): the energy and angle thresholds, from the sim.
+- The test-protocol numbers (§12), fixed from the sim before the first hardware trial.
+- Git: initialise this folder as a repo (public at the end), with folders `sim/`, `firmware/`, `analysis/`,
+  `hardware/` (CAD/STL), `web/` (React page), `media/`.

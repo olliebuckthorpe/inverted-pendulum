@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# SB3 checkpoints (keep only final ones, via a release or Git LFS)
+sim/checkpoints/
+
+# Videos stay out of git
+media/clips/
+
+# Claude Code worktrees
+.claude/worktrees/
+
+# OS / secrets
+.DS_Store
+.env
+.env.*
