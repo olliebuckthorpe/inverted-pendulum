@@ -5,7 +5,8 @@ at real speed. The pole is grey while swinging up and turns green while LQR is b
 
   Live 3D window:                          ./watch.sh swingup   (wraps mjpython; see the script)
   Save a video to sim/videos/:             uv run python watch.py swingup --video
-  Options:  scenario = balance | swingup | tap     --seed N   --teeth 20|30   --length 0.30   --seconds 8
+  Options:  scenario = balance | swingup | tap | double     --seed N   --teeth 20|30   --length 0.30   --seconds 8
+            double also takes --traj NAME (a saved trajectory from double_trajopt.py, e.g. 30T_30-20)
 """
 
 from __future__ import annotations
@@ -49,7 +50,10 @@ def frames(m, d, log, fps):
     pole = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "pole")
     for t in np.arange(0, log["t"][-1], 1 / fps):
         i = min(np.searchsorted(log["t"], t), len(log["t"]) - 1)
-        d.qpos[0], d.qpos[1] = log["x"][i], log["th"][i]
+        if "q" in log:  # double
+            d.qpos[:3] = log["q"][i]
+        else:
+            d.qpos[0], d.qpos[1] = log["x"][i], log["th"][i]
         m.geom_rgba[pole] = GREEN if log["mode"][i] == 1 else GREY
         mujoco.mj_forward(m, d)
         yield t
@@ -57,7 +61,8 @@ def frames(m, d, log, fps):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("scenario", choices=["balance", "swingup", "tap"])
+    ap.add_argument("scenario", choices=["balance", "swingup", "tap", "double"])
+    ap.add_argument("--traj", default="30T_30-20")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--teeth", type=int, default=20)
     ap.add_argument("--length", type=float, default=0.30)
@@ -65,14 +70,24 @@ def main():
     ap.add_argument("--video", action="store_true")
     a = ap.parse_args()
 
-    p = model.load_params(**{"drive.pulley_teeth": a.teeth, "pole.length": a.length})
-    log = simulate(a.scenario, p, a.seed, a.seconds)
-    m = model.build_single(p)
+    if a.scenario == "double":
+        import double_control
+        import double_trajopt
+        teeth, rods = a.traj.split("_")
+        p = double_trajopt.layout_params(int(teeth[:-1]), *(int(v) / 100 for v in rods.split("-")))
+        traj = double_trajopt.load(a.traj)
+        log = double_control.trial(p, traj, seconds=traj["T"] + a.seconds, seed=a.seed)["log"]
+        m = model.build_double(p)
+    else:
+        p = model.load_params(**{"drive.pulley_teeth": a.teeth, "pole.length": a.length})
+        log = simulate(a.scenario, p, a.seed, a.seconds)
+        m = model.build_single(p)
     d = mujoco.MjData(m)
 
     if a.video:
         import imageio.v2 as imageio
-        out = model.SIM_DIR / "videos" / f"{a.scenario}-{a.teeth}T-{int(a.length * 100)}cm-seed{a.seed}.mp4"
+        tag = a.traj if a.scenario == "double" else f"{a.teeth}T-{int(a.length * 100)}cm"
+        out = model.SIM_DIR / "videos" / f"{a.scenario}-{tag}-seed{a.seed}.mp4"
         out.parent.mkdir(exist_ok=True)
         r = mujoco.Renderer(m, 480, 854)
         with imageio.get_writer(out, fps=60, codec="libx264", quality=8) as w:
