@@ -34,10 +34,12 @@ def test_free_cart_top_speed(teeth, speed):
     assert log["i_motor"][-1] == pytest.approx(0.2, abs=0.03)
 
 
-def test_reversal_at_speed_exceeds_stall_current():
-    p = model.load_params()
-    v = 1.0  # m/s forwards, then full reverse duty
-    assert motor.motor_current(p, -1.0, v) < -9.5
+@pytest.mark.parametrize("teeth", [20, 30])
+def test_reversal_at_speed_exceeds_stall_current(teeth):
+    # Full reverse duty while running forwards at 90% of top speed: supply and back-EMF add up.
+    p = model.load_params(**{"drive.pulley_teeth": teeth})
+    top = (model.motor_gain(p) - model.gearbox_drag(p)) / model.motor_damping(p)
+    assert motor.motor_current(p, -1.0, 0.9 * top) < -9.5
 
 
 def test_supply_cap_limits_current():
