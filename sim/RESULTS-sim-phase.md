@@ -14,10 +14,10 @@ and velocities from filtered differencing, as the Pico will do. Code and tests a
 | # | Question | Answer | Confidence |
 |---|---|---|---|
 | 1 | Is the Pololu 37D 6.3:1 12 V strong enough? | **Yes**: single swing-up 10/10 on both pulleys, including with 30% less torque, 30% more friction, and rotor inertia ×0.5 or ×2 | Good for "not clearly too weak"; hardware must confirm |
-| 2 | 20T or 30T pulley? | **30T recommended** (Ollie to confirm): +22% bigger tap survived, better in every model-error case, faster swing-up | Good; driven by rotor inertia, which is estimated |
+| 2 | 20T or 30T pulley? | **30T (chosen by Ollie, 24 Sep)**: +22% bigger tap survived, better in every model-error case, faster swing-up | Good; driven by rotor inertia, which is estimated |
 | 3 | 30 cm or 40 cm rod? | **Keep 30 cm**: 40 cm is worse on both pulleys, and on 20T it can't swing up at all | Good |
-| 4 | Loop rate? | **500 Hz for the single, and 500 Hz is enough for the double too** (1 kHz gains ≤ 3% but doubles command chatter) | Medium: depends on the real delay and sensor noise |
-| 5 | Double layout? | See §5 (filled in below) | |
+| 4 | Loop rate? | **500 Hz for the single** (1 kHz gains ≤ 3% but doubles command chatter); **1 kHz available for the double's swing-up** (more tracking margin) | Medium: depends on the real delay and sensor noise |
+| 5 | Double layout? | **30 cm aluminium bottom (rod 1) + 20 cm carbon top**; swing-up 10/10 at 500 Hz and 1 kHz in sim | Medium: very sensitive to the double's own masses and friction |
 | 6 | Is the 12 V 5 A PSU enough? | **Yes, with a firmware current limit**: every swing-up, single and double, still succeeds with the supply capped at 5 A | Medium: the limiter needs the fitted motor constants |
 
 **To order now (Ollie):** Pololu 37D 6.3:1 12 V with 64 CPR encoder (#4757), and the Mean Well GST60A12-P1J
@@ -39,7 +39,7 @@ Energy swing-up → LQR, 10 randomised starts per case, 500 Hz, 2 ms delay (`q2_
 
 The fallback (the 24 V motor) is not needed on this evidence.
 
-## 2. Pulley: 30T recommended
+## 2. Pulley: 30T (chosen)
 
 Plot: `plots/sim-phase-single-summary.png` (left); swing-up traces: `plots/q2-swingup-20T-vs-30T.png`.
 
@@ -88,13 +88,45 @@ The single (LQR with a 2 ms delay):
 divided by a shorter time looks like a bigger velocity jump, so the motor gets buzzier.
 
 The plan's rule is "the lowest rate that keeps full robustness, ×2 for margin". 200 Hz keeps 98% of the
-robustness, so ×2 gives ~400 Hz; **500 Hz** is chosen (it's also the spec's default). The double balances and
-swings up equally well at 500 Hz and 1 kHz (§5), so the spec's "~1 kHz for the double" isn't needed. The
-firmware can still offer 1 kHz. The AI policy decides at 50–100 Hz as the spec says; that's a Phase 5 choice.
+robustness, so ×2 gives ~400 Hz; **500 Hz** is chosen (it's also the spec's default). For the double, balance is
+equally good at both rates, but the swing-up has more margin at 1 kHz (§5), so keep the spec's ~1 kHz for the
+double. The AI policy decides at 50–100 Hz as the spec says; that's a Phase 5 choice.
 
 ## 5. Double layout (balance and swing-up)
 
-_Filled in below once the re-planned trajectories have been evaluated._
+**Recommendation: bottom rod = the single's 30 cm aluminium rod, top rod = 20 cm carbon ("30/20").** It's the
+only 30T layout whose swing-up tracks 10/10 at both 500 Hz and 1 kHz. It reuses rod 1, and its balance is
+among the strongest.
+
+All with the supply capped at 5 A, 10 randomised starts each (`q5_double.py`, `double_trajopt.py`):
+
+| Layout (bottom/top, cm) | Balance: largest tap (rad/s) | Swing-up plan | Tracked 1 kHz | Tracked 500 Hz |
+|---|---|---|---|---|
+| **30T 30/20** | 0.88 | 2.46 s | **10/10** | **10/10** |
+| 30T 30/30 | 0.74 | 2.05 s (planned within ±300 mm) | 10/10 | 9/10 |
+| 30T 34/20 | 0.82 | 1.91 s (±300 mm) | 10/10 | 1/10 |
+| 30T 20/30 | 0.87 | 1.88 s | 0/10 (runs into the rail) | 0/10 |
+| 20T 30/20, 20T 34/20 | 0.84, 0.78 | none found | – | – |
+| 20T 30/30, 20T 20/30 | 0.73, 0.91 | 2.54 s, 2.26 s | 10/10, 10/10 | 10/10, 10/10 |
+
+The first plans were allowed to use ±350 mm of rail, and the fastest ones left the tracker no room to correct.
+Re-planning within ±300 mm fixed two of the three.
+
+**How much model error the 30T 30/20 swing-up tolerates** (planned on the nominal model, flown on a "wrong"
+rig at 500 Hz, 5 randomised starts each):
+
+| Survives (5/5) | Fails |
+|---|---|
+| cart mass ±20%, rotor inertia ×0.7, motor Kt −10%, rail friction ×2, 4 ms delay, 12-bit angles (0.09°) | rotor inertia ×1.4 (0/5), Kt −20% (0/5), joint-2 mass ±25% (1/5, 0/5), top-rod mass +20% (0/5), joint friction ×5 (0/5), **0.05° random angle noise** (0/5; balance survives it) |
+
+So the hardware swing-up needs: **masses weighed** (easy, and they're the most sensitive), **motor constants and
+joint friction from system ID**, a **low-friction** joint 1 (slip ring friction adds directly to joint
+friction), and a **state estimator** (Kalman filter) rather than plain differencing, because the sensor noise
+isn't measured yet (PLAN 2.4).
+
+**Loop rate for the double:** balance is equally good at 500 Hz and 1 kHz. Swing-up tracking has more margin
+at 1 kHz (34/20 only works there), so **the firmware should support 1 kHz for the double**; the single stays at
+500 Hz.
 
 ## 6. Power supply: keep the 5 A unit, add a firmware current limit
 
@@ -129,7 +161,8 @@ Video: `videos/double-30T_30-20-seed0.mp4` (regenerate with `uv run python watch
   ring) only did it in simulation (last log, Nov 2019). It also needs the joint-2 sensor's signal to cross a
   spinning joint 1: a slip ring (capsule rings have no published torque or noise figures, and SPI through
   brushes is unproven; the AS5047P's ABI output or a local UART link would be more robust) or wireless
-  (ESP-NOW ~5–25 ms latency, no pendulum precedent found). **Decision pending (SPEC §3).**
+  (ESP-NOW ~5–25 ms latency, no pendulum precedent found). **Ollie decided to attempt it on hardware (SPEC §3);
+  the signal path is still to choose.**
 
 ---
 
