@@ -45,10 +45,14 @@ What it needs beyond double balance (all found in the sim, 24 Sep; sim/RESULTS-s
   and 48/50 at twice those errors.
 - **The double's masses weighed and its joint friction measured** (free-swing decay), then the plan
   recomputed on the fitted model (~10 min).
-- **Getting the joint-2 signal across a spinning joint 1:** a **slip ring with ≤ 2 mN·m of dry drag** (the sim
-  fails at 4 mN·m; cheap capsule rings don't publish it, so bench-measure it), or a **wireless link with
-  ≤ 6 ms latency** (the sim fails at 10 ms; ESP-NOW is around that edge). **Signal path: to decide after the
-  slip-ring bench test.**
+- **Getting the joint-2 signal across joint 1: a flexible cable loop, not a slip ring** (decided on
+  evidence, 24 Sep). In the plan and in 20 flights on random rigs, rod 1 stays within −6°…251° (at most half a
+  turn from hanging), so nothing has to spin continuously. Slip rings were rejected: SenRing specifies its
+  capsule rings at 0.05 N·m (+0.01 N·m per 6 circuits), about 25× the 2 mN·m of drag the swing-up tolerates;
+  The Pi Hut's ring (£15.20) publishes no torque at all. The cable must twist softly: **≤ 0.5 mN·m/rad** if
+  unmodelled (the sim fails at 1.0). Use ultra-flexible stranded silicone wire (e.g. 30 AWG) in a long loop;
+  ABI needs only 4–5 wires. Bench-measure the stiffness (PLAN 2.5b). The firmware counts rod-1 turns and cuts
+  the motor beyond ±1 turn, to protect the cable.
 
 **Out of scope:** triple swing-up on hardware, a custom PCB, running the AI on the Mac
 in the loop, Isaac Sim, and hand-derived equations (optional later).

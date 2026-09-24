@@ -216,11 +216,18 @@ Everything below uses the AS5047P datasheet noise (0.068° RMS) and the 5 A supp
    The chosen plan also survives every large single error that broke the original (rotor ×1.4, Kt −20%,
    joint-2 mass ±25%, top rod +20%), a 4 ms delay, starts up to ±11° off hanging, 1 kHz (30/30), and joint
    friction on both joints from ×0.5 to ×1.5 (×2: 2/5).
-5. **How to get the joint-2 signal off the spinning rod:**
-   - **Slip ring:** the swing-up tolerates **≤ 2 mN·m** of dry drag at joint 1 (fails at 4 mN·m).
-     Bench-measure before trusting one (PLAN 2.5b).
-   - **Wireless:** the swing-up tolerates the joint-2 reading being **≤ 6 ms** late (fails at 10 ms). ESP-NOW
-     is around that edge, so it would need a delay-aware Kalman filter (not built yet).
+5. **How to get the joint-2 signal across joint 1: a cable loop, no slip ring.**
+   - Rod 1 **never needs to spin continuously**: in the plan and 20 flights on random rigs it stays within
+     −6°…251° (at most half a turn from hanging). After a fall the motor is off, and a falling double can't
+     gain the energy to go over the top again.
+   - **Slip ring rejected:** the swing-up tolerates ≤ 2 mN·m of dry drag at joint 1 (fails at 4 mN·m), and
+     SenRing's capsule rings are specified at 0.05 N·m (+0.01 N·m per 6 circuits).
+   - **Cable loop:** tolerates a twist stiffness **≤ 0.5 mN·m/rad** if unmodelled (fails at 1.0).
+     Back-of-envelope: 6 solid 30 AWG copper wires over a 10 cm bend ≈ 1.4 mN·m/rad (too stiff), so use
+     fine-stranded silicone wire in a longer loop, and measure it (PLAN 2.5b). A stiffer cable can instead be
+     measured and added to the model (a smooth spring, easy to model, unlike friction).
+   - **Wireless** (kept as a fallback): tolerates the joint-2 reading being ≤ 6 ms late (fails at 10 ms).
+     ESP-NOW is around that edge.
 
 Video: `videos/double-30T_30-20_damping150_u60_x30-seed0.mp4` (noise, Kalman filter, 5 A limit), or live:
 `./watch.sh double`.

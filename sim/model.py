@@ -124,7 +124,7 @@ def single_xml(p: dict, compliant: bool = False) -> str:
 
     pole_body = f"""
       <body name="pole" pos="0 0 0">
-        <joint name="hinge" type="hinge" axis="0 1 0" limited="false" damping="{q['pivot_damping']}" frictionloss="{q.get('pivot_coulomb', 0.0)}"/>
+        <joint name="hinge" type="hinge" axis="0 1 0" limited="false" damping="{q['pivot_damping']}" frictionloss="{q.get('pivot_coulomb', 0.0)}" stiffness="{q.get('cable_stiffness', 0.0)}" springref="{math.pi}"/>
         <geom name="hub" type="sphere" size="0.012" mass="{q['hub_mass']}" rgba="0.3 0.3 0.3 1"/>
         <geom name="pole" type="cylinder" fromto="0 0 0 0 0 {q['length']}" size="{q['radius']}"
               mass="{q['mass']}" rgba="0.8 0.8 0.85 1"/>
@@ -211,7 +211,7 @@ def double_xml(p: dict) -> str:
              frictionloss="{c['coulomb_friction'] + gearbox_drag(p)}"/>
       <geom name="cart" type="box" size="0.04 0.03 0.012" mass="{c['mass']}" rgba="0.15 0.35 0.25 1"/>
       <body name="pole" pos="0 0 0">
-        <joint name="hinge" type="hinge" axis="0 1 0" limited="false" damping="{q['pivot_damping']}" frictionloss="{q.get('pivot_coulomb', 0.0)}"/>
+        <joint name="hinge" type="hinge" axis="0 1 0" limited="false" damping="{q['pivot_damping']}" frictionloss="{q.get('pivot_coulomb', 0.0)}" stiffness="{q.get('cable_stiffness', 0.0)}" springref="{math.pi}"/>
         <geom name="hub" type="sphere" size="0.012" mass="{q['hub_mass']}" rgba="0.3 0.3 0.3 1"/>
         <geom name="pole" type="cylinder" fromto="0 0 0 0 0 {q['length']}" size="{q['radius']}"
               mass="{q['mass']}" rgba="0.8 0.8 0.85 1"/>

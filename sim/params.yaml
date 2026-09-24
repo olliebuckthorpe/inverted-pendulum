@@ -36,6 +36,7 @@ pole:
   hub_mass: 0.010          # kg. clamp hub at the pivot (PLAN 1.2); rides with the cart
   pivot_damping: 2.0e-4    # N·m·s/rad. guess (two 608 bearings); fitted from free swing in Phase 4
   pivot_coulomb: 0.0       # N·m. dry friction at joint 1 (e.g. a slip ring's brush drag). 0 = bearings only
+  cable_stiffness: 0.0     # N·m/rad. twist spring of the joint-2 cable looped across joint 1 (relaxed when hanging)
 
 sim:
   timestep: 0.001          # s. physics step (PLAN 1.2)
