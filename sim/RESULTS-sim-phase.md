@@ -166,6 +166,27 @@ Video: `videos/double-30T_30-20-seed0.mp4` (regenerate with `uv run python watch
 
 ---
 
+## Will the sensors on the order do the job? (checked 24 Sep)
+
+AS5047P datasheet (v1-00, System Specifications): **RMS output noise 0.068° (1σ, typical, "not tested,
+guaranteed by design")**; turning dynamic angle error compensation off (DAECDIS, meant for < 100 rpm) saves
+0.016°; the sensor refreshes every ~0.22 µs; SPI runs up to 10 MHz; the ABI output is up to 4096 steps/rev
+with programmable hysteresis (0–3 counts at 11-bit). Simulated at those noise levels:
+
+| Job | Result at the datasheet noise (0.068°) | What it needs |
+|---|---|---|
+| Single: swing-up + balance | 10/10, largest tap 3.52 rad/s (vs 3.60 noise-free); fine even at 0.1° | Nothing extra |
+| Double: balance | 5/5 at 500 Hz; **0/5 at 1 kHz** (differencing noise doubles) | Run double balance at 500 Hz, or use a better estimator |
+| Double: swing-up | **0/5** at 0.068°, 0.052° and 0.034° | Effective noise ≈ 0.02°: 5/5 at 0.017° |
+
+**Ways to get the double swing-up to ≈ 0.02°:** (1) read the angle ~16 times per control cycle over SPI and
+average; that cuts noise 4× **if** the noise is independent between reads, which the datasheet doesn't say,
+so PLAN 2.4 must measure it; (2) replace plain differencing with a Kalman-filter state estimator, which uses
+the model to reject noise (not yet built or tested). The single needs neither.
+
+The motor encoder (64 CPR × 6.3 = 403 counts/rev → 0.15 mm on 30T) is already modelled in every run above,
+and the end-stops only carry relay-coil current, so neither needs changing.
+
 ## Numbers that are guesses (replace in Phase 4)
 
 | Parameter | Value used | Why it matters |

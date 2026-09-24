@@ -133,7 +133,8 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 
 **2.4 AS5047P over SPI.**
 - Read the 14-bit angle (with the parity/error-flag check) at 1 kHz and print it over USB.
-- **Done when:** rotating the shaft by hand gives a smooth 0–360° reading. With the shaft still, the noise is measured and logged (the std-dev in degrees goes in `analysis/sensor-noise.md`).
+- **Also measure averaging** (sim/RESULTS-sim-phase.md, sensor section): the double swing-up needs ≈ 0.02° effective noise; the datasheet says 0.068°. Log the std-dev for 1, 4 and 16 back-to-back SPI reads averaged, with DAEC on and off. If 16 reads give ≈ 0.017°, the noise is independent and averaging works; if not, a Kalman filter is needed for the double swing-up.
+- **Done when:** rotating the shaft by hand gives a smooth 0–360° reading. With the shaft still, the noise is measured and logged (the std-dev in degrees goes in `analysis/sensor-noise.md`), including the averaging test.
 
 **2.5 USB protocol + latency** (`firmware/` + `sim/link.py`).
 - Binary packets with **COBS framing + CRC16**. Messages: TELEMETRY (Pico→Mac), COMMAND/MODE, PARAMS (gains, filter constants), WEIGHTS (the NN, chunked), HEARTBEAT.
