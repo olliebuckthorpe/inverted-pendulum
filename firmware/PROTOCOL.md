@@ -18,7 +18,7 @@ All multi-byte fields are little-endian; floats are IEEE-754 float32. `seq` coun
 | 0x03 | SET_MODE | Mac → Pico | u8 mode: 0 IDLE, 1 CLASSICAL, 2 AI, 3 LQR_ONLY, 4 SYSID, 5 KICK |
 | 0x04 | PARAM | Mac → Pico | u16 id, f32 value (one parameter; ids in `core/params.h`) |
 | 0x05 | WEIGHTS | Mac → Pico | u8 net (0 swing-up, 1 balance), u16 first float index, u8 n (≤ 48), f32 × n |
-| 0x06 | KICK | Mac → Pico | f32 duty, u16 duration_ms (software disturbance, SPEC §12) |
+| 0x06 | KICK | Mac → Pico | f32 duty, u16 duration_ms: a cart jolt that **overrides** the controller's duty for that long (SPEC §12) |
 | 0x81 | TELEMETRY | Pico → Mac | u32 t_us, f32 x, x_dot, th, th_dot, duty, u8 mode, u16 faults, u16 loop_exec_us, u16 loop_jitter_us |
 | 0x82 | PONG | Pico → Mac | the PING payload echoed, + u32 pico_us |
 | 0x83 | ACK | Pico → Mac | u8 type, u8 seq, u8 status (0 ok, else an error code) |

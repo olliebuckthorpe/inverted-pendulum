@@ -221,6 +221,7 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 - the trial order (alternating controllers) and the recorded fields.
 
 Choose the numbers from the sim so that neither controller is favoured. **Commit it. After this commit, the numbers don't change.**
+- **Draft ready (25 Sep):** `sim/protocol_numbers.py` measures both controllers through the same pipeline and writes `analysis/PROTOCOL-draft.md` (datasheet sim). Decisions made while drafting: a software kick **overrides** the duty for D ms (an additive kick was mostly cancelled by the controller); a push only counts as survived if the rod never passes the 35° hand-back angle (otherwise a knocked-down, re-swung-up rod counted). **Re-run on the fitted sim after Phase 4, add the tapper settings (7.1), then commit as `analysis/PROTOCOL.md`.**
 
 **5.5 React page skeleton** (branch `feature/web`; do this while the AI trains). Vite + React, sections for the hero video, "how it works" (rig, classical, AI, sim-to-real), the scorecard (empty), clips, and "what's next". Deploy a preview (Vercel, private or unlisted).
 - **Done when:** the skeleton is deployed with placeholder slots.

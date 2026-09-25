@@ -228,7 +228,8 @@ void loop1() {
     ctl::MotorParams motor = S.motor;
     float xpc = S.x_per_count, th0 = S.theta_zero;
     uint32_t hb_age = t0 - S.last_heartbeat_us;
-    float kick = int32_t(S.kick_until_us - t0) > 0 ? S.kick_duty : 0.0f;
+    float kick = S.kick_duty;
+    uint32_t S_kick_until = S.kick_until_us;
     int sid_type = S.sysid_type; float sa = S.sysid_amp, sf0 = S.sysid_f0, sf1 = S.sysid_f1, sT = S.sysid_s;
     mutex_exit(&lock);
 
@@ -253,10 +254,13 @@ void loop1() {
             else safety.faults |= ctl::F_WEIGHTS;
             break;
         case SYSID: duty = sysid_duty(sid_type, sa, sf0, sf1, sT, (t0 - mode_start_us) * 1e-6f); break;
-        case KICK:  duty = kick; break;
+        case KICK:  duty = int32_t(S_kick_until - t0) > 0 ? kick : 0.0f; break;
         default: duty = 0;
     }
-    if (mode == CLASSICAL || mode == LQR_ONLY || mode == AI) duty += kick;   // software disturbance (SPEC §12)
+    // software kick (SPEC §12): a cart jolt that OVERRIDES the controller for its duration (an additive kick is
+    // mostly cancelled by the controller pushing back). The controllers keep running, so they resume at once.
+    bool kicking = int32_t(S_kick_until - t0) > 0;
+    if (kicking && (mode == CLASSICAL || mode == LQR_ONLY || mode == AI)) duty = kick;
     duty = ctl::supply_cap(motor, duty, s.xd);
     if (!p12) safety.faults |= ctl::F_ESTOP;
     float out = (mode == IDLE) ? 0.0f : safety.gate(duty, hb_age, s, balancing, sensor_ok, relay_ok);
