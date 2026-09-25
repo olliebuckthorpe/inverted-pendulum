@@ -56,10 +56,34 @@ sensor board and screws ~13 g). The sim assumed 400 g, and the AI's domain rando
 - [ ] PLAN 2.2 "done when": the cart slides the full rail by hand without binding, the shaft spins freely in
       both bearings, the magnet sits centred on the sensor.
 
-## Still to design (PLAN 2.2)
+## End blocks and the safety stop (added 25 Sep)
 
-Motor end block (motor behind the beam, 30T pulley in the belt plane), idler end block with belt tensioning,
-end-stop mounts at both ends, E-stop enclosure, beam clamps.
+| Part | Est. print | Notes |
+|---|---|---|
+| motor_block | ~17 g | +X end. Flange on the beam's end face + tab on its back face (4 wood screws). The Pololu 37D bolts to the plate's back, shaft through toward the room; **12 holes on the Ø31 circle** so the motor fits either hexagon orientation; **M3 screws may enter the gearbox only 3.0 mm** (Pololu drawing). Gearbox centre 7 mm outboard of the shaft; motor body behind the beam's plane, beyond its end |
+| idler_block | ~20 g | −X end. Fork holding the 20T idler on an M5 bolt in 14 mm slots: pull outward to tension the belt, tighten; M3 push screw for fine adjustment |
+| end_ramp_right / _left | ~33 g each | Foot on the beam face below both belt strands, arm forward under the cart, upright in front of the cart plate (Y 35–40, behind the rod at Y ≈ 43.5). The ramp rises 3 mm from X = ±350 and stays high to the bumper |
+| switch_carrier | ~5 g | On the cart plate's front face below the boss: two roller micro switches in series, mirrored so the rollers sit at ±7 mm; slotted to set a 2 mm press |
+| bumper_right / _left | ~2 g each | **Print in TPU.** Hollow blocks at X = ±480 in the carriage's path: the last resort |
+
+**Why the end-stops ride on the cart:** a fixed end-stop hit head-on has ~2 mm of overtravel, but after tripping
+the cart keeps braking for up to ~118 mm and would crush it. On the ramps, the rollers are pushed sideways
+and **stay pressed** while the cart brakes; push the cart back by hand to reset. The switch wires join the
+sensor cable to the cart.
+
+**Checked by `clearance.py`** (cart at 0, ±325, ±340, ±355, ±457 mm; rod hanging, horizontal both ways,
+upright): 0 collisions; switches released at ±325/±340 (the swing-ups use ≤ ±325), pressed at ±355 and
+beyond, first trip ≈ ±348 mm. The only contacts are the intended ones (carriage on rail, grip ridges in
+the belt teeth). Previews: `out/ends_preview.png`.
+
+**Frame constraint:** the motor's underside is ~55 mm below the rail centre, so keep the beam's base / the
+desk ≥ 60 mm below the rail centre in the motor zone. Beam clamps: ordinary G-clamps (nothing to print).
+
+## Still to design
+
+E-stop enclosure (depends on the switch bought), a guide for the cable to the cart.
+
+⚠️ Measure on arrival: micro switch body, holes and lever height; 30T pulley hub; 20T idler width.
 
 Sources: HIWIN MG-series catalogue (MGN12H: W 27, B 20, C 20, L 45.4, H 13, M3 × 3.5, 0.054 kg; MGN12 rail
 WR 12, HR 8, P 25): https://hiwin.co.uk/wp-content/uploads/2017/05/CRD-Hiwin-Linear-guides-MG-series.pdf ·
