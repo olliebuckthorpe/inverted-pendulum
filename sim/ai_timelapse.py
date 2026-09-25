@@ -56,7 +56,7 @@ def caption(img: np.ndarray, lines: list[str], progress: float) -> np.ndarray:
 def main():
     tag = sys.argv[1]
     n = int(sys.argv[2]) if len(sys.argv) > 2 else 8
-    task = tag.split("_")[0]
+    task = "balance" if tag.startswith("balance") else "swingup"   # tags are e.g. "balanceG_seed0"
     snapdir = model.SIM_DIR / "checkpoints" / f"{tag}_snapshots"
     snaps = sorted(snapdir.glob("*.zip"), key=lambda f: int(re.search(r"_(\d+)_steps", f.name).group(1)))
     final = model.SIM_DIR / "checkpoints" / f"{tag}.zip"
@@ -80,7 +80,7 @@ def main():
             hours = steps / POLICY_HZ / 3600
             verdict = f"fell after {fell_at:.1f} s" if fell_at is not None else ("balanced" if task == "balance" else "stayed on the rail")
             lines = [f"AI {'balance' if task == 'balance' else 'swing-up'}: after {steps:,} practice steps",
-                     f"~{hours:.1f} h of simulated practice  ·  this attempt: {verdict}"]
+                     f"~{hours:.1f} h of simulated practice  ·  realistic sim (noise on)  ·  this attempt: {verdict}"]
             for k in range(0, len(frames), int(POLICY_HZ / FPS)):
                 d.qpos[0], d.qpos[1] = frames[k]
                 mujoco.mj_forward(m, d)

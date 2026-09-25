@@ -70,7 +70,8 @@ def main():
     Ws = [actor_weights(f) for f in snaps]
     # Step 0: the untrained network. SAC's initial weights depend only on the seed, so rebuild them exactly.
     from envs.pendulum_env import PendulumEnv
-    task_name, seed = tag.split("_seed")[0], int(tag.split("_seed")[1])
+    task_name = "balance" if tag.startswith("balance") else "swingup"   # tags are e.g. "balanceG_seed0"
+    seed = int(tag.split("_seed")[1])
     init = SAC("MlpPolicy", PendulumEnv(task_name), policy_kwargs=dict(net_arch=[64, 64]), seed=seed, device="cpu")
     lin = [m for m in init.policy.actor.latent_pi if hasattr(m, "weight")]
     Ws.insert(0, [lin[0].weight.detach().numpy(), lin[1].weight.detach().numpy(), init.policy.actor.mu.weight.detach().numpy()])
