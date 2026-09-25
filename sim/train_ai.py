@@ -73,6 +73,8 @@ if __name__ == "__main__":
         # G: the full rig (random physics, gearbox play, smoothing) but NO sensor noise while learning (noise is
         # what breaks learning: +noise only 36/100, +random physics only 100/100). Evaluated WITH noise.
         "G": ({"noise_deg": 0.0}, 0.99),
+        # Gc: G, but the balance policy practises catching the states the swing-up policy hands over in
+        "Gc": ({"noise_deg": 0.0, "start": "catch"}, 0.99),
         # curriculum stage 2: continue from stage 1 ("E") on the full randomised rig, with the anti-jitter penalty
         "F": ({"w_da": 1.0}, 0.99),
     }
@@ -94,8 +96,9 @@ if __name__ == "__main__":
     agent.learn(total_timesteps=steps, callback=snaps)
     minutes = (time.time() - t0) / 60
     agent.save(CKPT / tag)
-    # Always evaluate on the rig as it will really be: sensor noise on (training may have switched it off)
-    eval_kw = {k: v for k, v in env_kw.items() if k != "noise_deg"}
+    # Always evaluate on the FULL rig as it will really be (randomised physics, gearbox play, smoothing, sensor
+    # noise), whatever the policy trained on. Only the decision rate carries over (it changes what the policy sees).
+    eval_kw = {k: v for k, v in env_kw.items() if k in ("policy_hz", "start")}
     result = evaluate(agent, task, env_kw=eval_kw)
     result.update({"task": task, "variant": variant, "env": env_kw, "gamma": gamma, "seed": seed, "steps": steps,
                    "started_from": start_from,

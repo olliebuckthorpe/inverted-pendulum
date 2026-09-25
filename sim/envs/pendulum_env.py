@@ -63,7 +63,9 @@ class PendulumEnv(gym.Env):
     def __init__(self, task: str = "balance", randomise_scale: float = 1.0, smooth_hz: float = 20.0,
                  episode_s: float | None = None, base: dict | None = None, compliant: bool = True,
                  policy_hz: float = POLICY_HZ, w_x: float = 1.0, w_da: float = 0.1, w_xd: float = 0.0,
-                 noise_deg: float | None = None):
+                 noise_deg: float | None = None, start: str = "near"):
+        """start: "near" = small offsets from upright; "catch" = the states the swing-up hands over in
+        (measured: 90% within cart 194 mm, cart 0.63 m/s, rod spin 2.8 rad/s)."""
         """w_x: cart-centring penalty; w_xd: cart-speed penalty (catches slow drift early); w_da: jitter penalty."""
         """compliant=True: motor drives the cart through gearbox play and a stretchy belt (plant.py's model)."""
         assert task in ("balance", "swingup")
@@ -73,6 +75,7 @@ class PendulumEnv(gym.Env):
         self.scale = randomise_scale
         self.policy_hz, self.w_x, self.w_da, self.w_xd = policy_hz, w_x, w_da, w_xd
         self.noise_deg = noise_deg   # if set, overrides the (randomised) sensor noise level
+        self.start = start
         self.episode_steps = round((episode_s or (10.0 if task == "balance" else 12.0)) * policy_hz)
         self.n_ctrl = round(CTRL_HZ / policy_hz)          # control cycles per policy decision
         self.alpha = 1 / (1 + CTRL_HZ / (2 * math.pi * smooth_hz))  # first-order smoothing per control cycle
@@ -94,16 +97,22 @@ class PendulumEnv(gym.Env):
         self.phys_per_ctrl = round(1 / (CTRL_HZ * self.dt))
         self.queue = deque([0.0] * round(self.p["sim"]["control_delay"] / self.dt))
         self.est = Estimator(self.p, 1 / CTRL_HZ, rng)
-        if self.task == "balance":
+        xd = 0.0
+        if self.task == "balance" and self.start == "catch":
+            th = rng.uniform(-0.18, 0.18)          # ±10°
+            thd = rng.uniform(-3.5, 3.5)
+            xd = rng.uniform(-0.8, 0.8)
+        elif self.task == "balance":
             th = rng.uniform(-0.10, 0.10)
             thd = rng.uniform(-0.3, 0.3)
         else:
             th = math.pi + rng.uniform(-0.05, 0.05)
             thd = rng.uniform(-0.2, 0.2)
-        self.d.qpos[0], self.d.qpos[1] = rng.uniform(-0.05, 0.05), th
-        self.d.qvel[1] = thd
+        x0 = rng.uniform(-0.22, 0.22) if (self.task == "balance" and self.start == "catch") else rng.uniform(-0.05, 0.05)
+        self.d.qpos[0], self.d.qpos[1] = x0, th
+        self.d.qvel[0], self.d.qvel[1] = xd, thd
         if self.compliant:
-            self.d.qpos[2] = self.d.qpos[0]  # drive starts where the cart is
+            self.d.qpos[2], self.d.qvel[2] = self.d.qpos[0], self.d.qvel[0]  # drive starts with the cart
         mujoco.mj_forward(self.m, self.d)
         self.duty = 0.0
         self.last_action = 0.0

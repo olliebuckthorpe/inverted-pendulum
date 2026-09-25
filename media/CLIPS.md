@@ -25,7 +25,16 @@ PLAN 0.2); this index is in git so nothing gets lost. Naming: `YYYY-MM-DD-<sourc
 | 2026-09-25-sim-tour-DD-UU-UD-DU-DD.mp4 | Tour: swing up, then double-inverted → single-inverted → single-down → hanging, holding each 2 s | `./render_clips.sh` |
 | 2026-09-25-sim-tour-DD-UU-DU-UD-UU-DD.mp4 | Five-move tour through all four positions | `./render_clips.sh` |
 
+## AI, 25 Sep 2026 (datasheet sim; sim/RESULTS-ai.md)
+
+| File | Shows | Regenerate (from `sim/`) |
+|---|---|---|
+| 2026-09-25-sim-ai-network-balance_seed0.mp4 | First balance attempt: the network wiring itself up over 1M steps, beside its learning curve | `uv run python ai_network_anim.py balance_seed0 OUT` |
+| 2026-09-25-sim-ai-timelapse-balance_seed0.mp4 | First balance attempt's timelapse: learns to hold the rod but the cart drifts (8/100) | `uv run python ai_timelapse.py balance_seed0 8 OUT` |
+| 2026-09-25-sim-ai-swingup-handover-demo.mp4 | The working AI controller: swing-up policy → hand-over → balance policy, 3 random rigs with sensor noise | `uv run python ai_demo.py swingupE_seed0 balanceGc_seed1 OUT 3` |
+| 2026-09-25-sim-ai-timelapse-balanceG_seed0.mp4 / -network-… | The working balance policy learning (99/100) | `./render_ai_videos.sh balanceG_seed0` |
+| 2026-09-25-sim-ai-timelapse-swingupE_seed0.mp4 / -network-… | The swing-up policy learning | `./render_ai_videos.sh swingupE_seed0` |
+
 ## To come
 
-- AI training timelapses (`uv run python ai_timelapse.py balance_seed0`): the policy learning, snapshot by snapshot.
 - Hardware milestones (PLAN: film every milestone): first Pico readings, first balance, first swing-up, …
