@@ -1,0 +1,112 @@
+{
+  "20T | nominal": {
+    "success": 10,
+    "catch_s": 2.2219999999998663,
+    "max_x_mm": 220.36282862311165,
+    "peak_supply_A": 5.086115030199429,
+    "rms_supply_A": 0.5171016479680516,
+    "longest_above_trip_ms": 0.0,
+    "peak_motor_A": 5.086115030199429,
+    "success_capped_5A": 10,
+    "largest_tap_rad_s": 2.958984375
+  },
+  "20T | motor -30% torque": {
+    "success": 10,
+    "catch_s": 2.2209999999998664,
+    "max_x_mm": 222.57205784139123,
+    "peak_supply_A": 5.089052734850711,
+    "rms_supply_A": 0.792432672487251,
+    "longest_above_trip_ms": 0.0,
+    "peak_motor_A": 5.089052734850711,
+    "success_capped_5A": 10,
+    "largest_tap_rad_s": 2.568359375
+  },
+  "20T | friction +30%": {
+    "success": 10,
+    "catch_s": 2.1999999999998687,
+    "max_x_mm": 218.0461130420676,
+    "peak_supply_A": 5.077193930541053,
+    "rms_supply_A": 0.5457767786701704,
+    "longest_above_trip_ms": 0.0,
+    "peak_motor_A": 5.077193930541053,
+    "success_capped_5A": 10,
+    "largest_tap_rad_s": 2.9150390625
+  },
+  "20T | rotor inertia x0.5": {
+    "success": 10,
+    "catch_s": 2.1729999999998717,
+    "max_x_mm": 209.7185744029622,
+    "peak_supply_A": 5.094012743938135,
+    "rms_supply_A": 0.27726424021952273,
+    "longest_above_trip_ms": 0.0,
+    "peak_motor_A": 5.094012743938135,
+    "success_capped_5A": 10,
+    "largest_tap_rad_s": 3.4765625
+  },
+  "20T | rotor inertia x2": {
+    "success": 10,
+    "catch_s": 2.8169999999998008,
+    "max_x_mm": 217.87056725204968,
+    "peak_supply_A": 5.503827980481934,
+    "rms_supply_A": 1.107006580909422,
+    "longest_above_trip_ms": 63.0,
+    "peak_motor_A": 6.705558883995037,
+    "success_capped_5A": 10,
+    "largest_tap_rad_s": 2.2998046875
+  },
+  "30T | nominal": {
+    "success": 10,
+    "catch_s": 2.2489999999998633,
+    "max_x_mm": 215.9845105822175,
+    "peak_supply_A": 5.50643533666938,
+    "rms_supply_A": 0.36441818340668913,
+    "longest_above_trip_ms": 5.0,
+    "peak_motor_A": 5.50643533666938,
+    "success_capped_5A": 10,
+    "largest_tap_rad_s": 3.603515625
+  },
+  "30T | motor -30% torque": {
+    "success": 10,
+    "catch_s": 2.2639999999998617,
+    "max_x_mm": 218.4911288908444,
+    "peak_supply_A": 5.30938730807412,
+    "rms_supply_A": 0.5744072735397551,
+    "longest_above_trip_ms": 2.0,
+    "peak_motor_A": 5.30938730807412,
+    "success_capped_5A": 10,
+    "largest_tap_rad_s": 3.14453125
+  },
+  "30T | friction +30%": {
+    "success": 10,
+    "catch_s": 2.250999999999863,
+    "max_x_mm": 215.48460943488234,
+    "peak_supply_A": 5.3221720178299385,
+    "rms_supply_A": 0.3886627336673684,
+    "longest_above_trip_ms": 2.0,
+    "peak_motor_A": 5.3221720178299385,
+    "success_capped_5A": 10,
+    "largest_tap_rad_s": 3.5498046875
+  },
+  "30T | rotor inertia x0.5": {
+    "success": 10,
+    "catch_s": 2.405999999999846,
+    "max_x_mm": 233.3359404478304,
+    "peak_supply_A": 5.414737143750944,
+    "rms_supply_A": 0.22785679414211446,
+    "longest_above_trip_ms": 2.0,
+    "peak_motor_A": 5.414737143750944,
+    "success_capped_5A": 10,
+    "largest_tap_rad_s": 4.1064453125
+  },
+  "30T | rotor inertia x2": {
+    "success": 10,
+    "catch_s": 2.2569999999998624,
+    "max_x_mm": 220.4756058400445,
+    "peak_supply_A": 5.295615092625595,
+    "rms_supply_A": 0.7307465025615758,
+    "longest_above_trip_ms": 2.0,
+    "peak_motor_A": 5.295615092625595,
+    "success_capped_5A": 10,
+    "largest_tap_rad_s": 2.9248046875
+  }
+}

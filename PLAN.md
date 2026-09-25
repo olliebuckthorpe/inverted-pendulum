@@ -19,8 +19,8 @@ any phase with zero re-discovery.
 
 | Date | Gate |
 |---|---|
-| Thu 24 Sep | Order all non-motor parts |
-| **Mon 28 Sep** | 🚦 **Order the motor** (sim answer or the default) |
+| Thu 24 Sep | Order all parts except the motor and PSU |
+| **Mon 28 Sep** | 🚦 **Order the motor and the PSU** (sim answers or the defaults) |
 | **Sun 4 Oct** | 🚦 Safety checklist passed before any closed-loop run |
 | **Sun 11 Oct** | 🚦 Test-protocol numbers fixed in `analysis/PROTOCOL.md` (before the first test trial) |
 | **Wed 21 Oct** | 🚦 **Single DONE** target (SPEC §4). If not done by **Sun 25 Oct**, skip the double entirely |
@@ -44,8 +44,8 @@ Everything below is already researched and sourced in SPEC §6–§17. Don't re-
 ## Phase 0 — Today, Thu 24 Sep: order + repo
 
 **0.1 Order the non-motor parts (Ollie).**
-- Use SPEC §6 items 1–18. Re-check every ⚠️ price at checkout: the rail at **1000 mm**, the AS5047P kit, the MD13S VAT, the E-stop, the shaft. Skip anything already owned (breadboard, jumpers, bolts, wire).
-- Double-check the exact specs as you buy: **GT2 6 mm belt; 20T and 30T pulleys with a 6 mm bore; MGN12H carriage; Pico 2 H; AS5047P-TS_EK_AB; MD13S; GST60A12-P1J from RS.**
+- Use SPEC §6 items 1–18 plus **15a (relay) and 15b (diode)**, but **not item 9, the PSU**: it's ordered with the motor once sim Q6 has sized it. Re-check every ⚠️ price at checkout: the rail at **1000 mm**, the AS5047P kit, the MD13S VAT, the E-stop, the shaft. Skip anything already owned (breadboard, jumpers, bolts, wire).
+- Double-check the exact specs as you buy: **GT2 6 mm belt; 20T and 30T pulleys with a 6 mm bore; MGN12H carriage; Pico 2 H; AS5047P-TS_EK_AB; MD13S; a 12 V automotive relay with 30–40 A contacts.**
 - **Done when:** order confirmations have been saved to `hardware/orders.md` (item, seller, price paid, expected delivery).
 
 **0.2 Create the repo.**
@@ -81,7 +81,8 @@ answer isn't clear by Mon 28 Sep, use the default (Pololu 37D 6.3:1, 20T pulley,
 **1.3 DC motor model from the Pololu datasheet** (`sim/motor.py`).
 - Datasheet, output-referred (Pololu #4757, 12 V): stall torque **0.294 N·m**, stall current **5.5 A**, no-load **1600 RPM at 0.2 A**.
 - Derived: R = 12 / 5.5 ≈ **2.18 Ω**; Kt ≈ 0.294 / 5.5 ≈ **0.0535 N·m/A**; ω₀ = 167.6 rad/s; Ke ≈ (12 − 0.2·R) / ω₀ ≈ **0.069 V·s/rad**. Kt ≠ Ke reflects gearbox friction and efficiency; keep both, and fit them in Phase 4.
-- The model runs each step: the input is a duty cycle in [−1, 1] → voltage = duty × 12 V → I = (V − Ke·ω)/R, clamped to ±5.5 A → τ = Kt·I → cart force F = τ / r_pulley (r = teeth × 2 mm / 2π; **20T: 6.37 mm, 30T: 9.55 mm**) → apply F to the cart slide joint. Include the motor/gear rotor inertia as reflected cart mass (placeholder 0).
+- The model runs each step: the input is a duty cycle in [−1, 1] → voltage = duty × 12 V → I = (V − Ke·ω)/R (**not** clamped at the 5.5 A stall figure: a reversal at speed really does draw more, and that's what Q6 must measure) → τ = Kt·I → cart force F = τ / r_pulley (r = teeth × 2 mm / 2π; **20T: 6.37 mm, 30T: 9.55 mm**) → apply F to the cart slide joint. Include the motor/gear rotor inertia as reflected cart mass (placeholder 0).
+- Log the **supply current** (≈ |duty| × motor current when driving; H-bridge approximation) each step, and add an optional **PSU current cap** (default off; 5 A for Q6).
 - Add parameters for later: **gearbox backlash** (a dead-band on cart position, default 0.2 mm ≈ 1° at the output), **Coulomb + viscous rail friction**, and **control delay** (default 2 ms).
 - **Done when:** a unit check passes. Full duty on a locked cart gives F ≈ 46 N (20T) / 31 N (30T), and a free cart's top speed approaches ≈ 1.07 / 1.60 m/s.
 
@@ -96,13 +97,14 @@ answer isn't clear by Mon 28 Sep, use the default (Pololu 37D 6.3:1, 20T pulley,
 - **Hand-over:** switch to LQR when |θ| < ~20° and the energy is close to upright. Tune the thresholds; they become SPEC §18 open items.
 - **Done when:** from hanging at rest, it swings up and balances within 10 s, with the cart staying inside ±0.40 m, in ≥ 9 of 10 runs (with small random starting offsets).
 
-**1.6 Answer the five questions.** Write the answers into `sim/RESULTS-sim-phase.md` with plots.
+**1.6 Answer the six questions.** Write the answers into `sim/RESULTS-sim-phase.md` with plots.
 1. **Motor adequacy:** does 1.5 succeed with the datasheet motor on 20T *or* 30T, with a margin? Also run it with 30% less torque and 30% more friction. If it passes → **order the motor**.
 2. **Pulley:** compare 20T vs 30T on swing-up time, peak cart travel, and balance robustness (the largest kick survived). Pick one.
 3. **Rod length:** repeat 2 with 0.40 m. Keep 0.30 m unless 0.40 m is clearly better.
 4. **Loop rate:** sweep the LQR at 100/200/500/1000 Hz with 2 ms delay. Pick the lowest rate that keeps the full robustness, ×2 for margin. Expect ~500 Hz.
 5. **Double layout:** build `sim/models/double.xml` (a carbon top rod ~0.015 kg). LQR-balance it (started upright) for combos of bottom/top length (0.30/0.20, 0.30/0.30, 0.20/0.30, 0.34/0.20). Pick the combo with the **largest kick survived**, and record the loop rate it needs (expect ~1 kHz).
-- **Done when:** `RESULTS-sim-phase.md` answers all five, and the motor has been ordered (🚦 **Mon 28 Sep**). Commit and push.
+6. **PSU (SPEC §11 Q6):** log the peak/RMS supply current and the time above 5.25 A in the 1.5 swing-up; re-run 1.5 with the supply capped at 5 A. If it still passes ≥ 9/10 → GST60A12 + 7.5 A fuse; otherwise → a larger 12 V PSU (price-checked) and a resized fuse. **Order the PSU with the motor.**
+- **Done when:** `RESULTS-sim-phase.md` answers all six, and the motor and PSU have been ordered (🚦 **Mon 28 Sep**). Commit and push.
 
 **Fallback:** if the datasheet motor can't swing up on either pulley even at nominal values → switch to the 24 V Pololu 37D 6.3:1 (#4698) plus a 24 V PSU (the Cytron handles up to 30 V), re-run question 1, and update SPEC §6.
 
@@ -115,11 +117,13 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 **2.1 Datasheet checks (before wiring anything).**
 - Cytron MD13S: the input logic HIGH threshold (it must accept 3.3 V from the Pico), the PWM frequency range, the DIR/PWM mode, the power-on state.
 - Regenerative braking: decide on a mitigation from the MD13S and GST60A12 docs (a bulk electrolytic capacitor across the supply at the driver and/or a TVS diode) and add it to the parts list if needed.
+- **End-stop sensing:** decide how the Pico reads the end-stop states without 12 V reaching a 3.3 V pin (SPEC §8 relay loop).
 - Record the findings in `hardware/electronics.md` with a wiring diagram (a drawn photo is fine).
 - **Done when:** `electronics.md` has the power path from SPEC §8, the pin map, and both decisions.
 
 **2.2 CAD + prints** (`hardware/`, keep the STEP/STL files in git).
 - Parts: the cart (mounts on the MGN12H; holds two 608s for joint 1 and the AS5047P board 1–1.5 mm from the shaft end, **adjustable**, e.g. slotted holes or shims); the motor end block (motor mount + 20T/30T pulley); the idler end block; a belt clamp on the cart; the rod hub (clamps the 8 mm tube to the shaft); end-stop mounts at both ends; the E-stop enclosure.
+- **Leave a cable path across joint 1** (SPEC §3: hardware double swing-up; no slip ring): a smooth, rounded guide and an anchor point on the cart for a loose loop of joint-2 sensor wires that allows ±1 turn of rod 1 without snagging. The magnet stays on the shaft end as before.
 - Keep the cart light (infill ~20–30%, no bulky walls). Weigh every printed part and log it in `sim/params.yaml`.
 - **Done when:** the cart slides the full rail by hand without binding, the shaft spins freely in both bearings, and the magnet sits centred on the sensor.
 
@@ -129,12 +133,16 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 
 **2.4 AS5047P over SPI.**
 - Read the 14-bit angle (with the parity/error-flag check) at 1 kHz and print it over USB.
-- **Done when:** rotating the shaft by hand gives a smooth 0–360° reading. With the shaft still, the noise is measured and logged (the std-dev in degrees goes in `analysis/sensor-noise.md`).
+- **Also measure averaging** (sim/RESULTS-sim-phase.md, sensor section): log the std-dev for 1, 4 and 16 back-to-back SPI reads averaged, with DAEC on and off. The double swing-up uses a Kalman filter either way (it works at the datasheet 0.068°), but less noise means more margin, and the measured value goes into the sim.
+- **Done when:** rotating the shaft by hand gives a smooth 0–360° reading. With the shaft still, the noise is measured and logged (the std-dev in degrees goes in `analysis/sensor-noise.md`), including the averaging test.
 
 **2.5 USB protocol + latency** (`firmware/` + `sim/link.py`).
 - Binary packets with **COBS framing + CRC16**. Messages: TELEMETRY (Pico→Mac), COMMAND/MODE, PARAMS (gains, filter constants), WEIGHTS (the NN, chunked), HEARTBEAT.
 - **Measure the round-trip latency:** the Mac sends a timestamped ping, the Pico echoes it, 10,000 samples. Log the median, p99 and max in `analysis/usb-latency.md`.
 - **Done when:** telemetry streams at the loop rate into **PlotJuggler** (via a small Python bridge to UDP/JSON), and the latency numbers are recorded.
+
+**2.5b Joint-1 cable bench test (only if a hardware double swing-up is still planned; SPEC §3).** Replaces the slip ring. Run 4–6 strands of ultra-flexible stranded silicone wire (e.g. 30 AWG) from a board on a spare rod across joint 1 in a long, loose loop. (1) **Stiffness:** with the rod hanging, rotate the cable anchor by one full turn and measure how far the hanging rod is pulled off vertical (δ). The cable stiffness k ≈ m·g·l·sin δ / (2π). It must be ≤ 0.5 mN·m/rad, or else be measured precisely and added to the model. (2) **Signal:** stream the AS5047P (SPI and ABI) through the cable while swinging the rod ±1 turn by hand for 10 minutes; count bad frames or lost counts.
+- **Done when:** k and the error counts are in `hardware/joint1-cable.md`, with a go / no-go.
 
 **2.6 Fixed-rate loop skeleton.**
 - A timer-driven loop at the rate chosen in 1.6 (Q4). It measures its own execution time and jitter and reports them in telemetry.
@@ -146,19 +154,20 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 
 **3.1 Mechanical assembly.** The rail on a rigid, flat base (clamped to the desk), the motor and idler blocks, the belt tensioned (firm, with no slack but not over-tight), the cart, the joint, and the 30 cm rod.
 
-**3.2 Power wiring per SPEC §8.** PSU → 7.5 A fuse → E-stop → NC end-stops in series → MD13S → motor. The regen mitigation from 2.1. Shared ground with the Pico.
+**3.2 Power wiring per SPEC §8.** PSU → fuse → E-stop → relay contacts → MD13S → motor; relay coil fed through the NC end-stops in series, with a flyback diode. The regen mitigation from 2.1. Shared ground with the Pico.
 
 **3.3 Motor encoder via PIO.** Port `pico-examples/pio/quadrature_encoder` to arduino-pico.
 - **Done when:** moving the cart by hand along the whole rail gives a consistent count, and the counts per metre (from the pulley geometry) are verified with a ruler to within 1%.
 
 **3.4 Safety checklist 🚦 (Sun 4 Oct).** Every item must be tested and **seen working**, then logged in `hardware/safety-checklist.md` with the date:
 - [ ] The E-stop cuts motor power mid-motion (tested at low duty).
-- [ ] Each end-stop cuts motor power when hit, and the Pico reports which one.
+- [ ] Each end-stop drops the relay (cutting motor power) when hit, and the Pico reports which one.
 - [ ] The heartbeat watchdog: pulling the USB or killing the Mac script **stops the motor within 100 ms**.
 - [ ] The Pico hardware watchdog: a deliberate hang in the firmware → reset → motor off.
 - [ ] **The motor is off on boot and on reset** (no twitch).
 - [ ] The soft travel limits stop the cart before the end-stops.
 - [ ] Fall detection: in balance mode, tilting the rod past the limit → motor off.
+- [ ] (Double only) Rod-1 turn counter: more than ±1 turn from hanging → motor off (protects the joint-2 cable).
 - [ ] The output clamp and slew-rate limit are active.
 - [ ] Hands stay clear during runs; the rig is clamped down.
 - **Done when:** every box is ticked. **No closed-loop control before this.**
@@ -251,8 +260,10 @@ Choose the numbers from the sim so that neither controller is favoured. **Commit
 
 - **8.1** On Wed 21 Oct, order the 2nd AS5047P kit and the carbon tube (UK stock, 1–2 days).
 - **8.2** Update the double model with the Phase 4 fitted params plus the chosen link layout from 1.6 (Q5). Design the LQR for it (expect ~1 kHz; confirm the loop timing from 2.6 at that rate).
-- **8.3** Print joint 2 (light bearings, the AS5047P on top of rod 1, flexible wire along rod 1 secured with clips), then assemble. Run system ID on the new link (free swing) and refit.
+- **8.3** Print joint 2 (light bearings, the AS5047P on top of rod 1, flexible wire along rod 1 secured with clips), then assemble. **Joint 2 must hold rod 2 beside rod 1 (~15 mm sideways), not in line with it,** so rod 2 can swing past rod 1: this is needed for the UD and DU positions and for the transitions between them (sim/RESULTS-sim-phase.md, transitions section). Run system ID on the new link (free swing) and refit.
 - **8.4** LQR double balance, started upright. **Done when:** ≥ 30 s balance plus a recovery from a light tap. **Film it.**
+- **Double swing-up (Ollie: attempt on hardware, SPEC §3):** already working in simulation from Phase 1 (trajectory optimisation + time-varying LQR + Kalman filter + hand-over; `sim/double_trajopt.py`, `sim/double_control.py`). On hardware: (a) re-plan on the fitted model from 8.3 using the rule "duty ≤ 0.6, cart ±300 mm, joint-2 friction ×1.5" (`sim/plan_variant.py`); (b) implement the Kalman filter + TVLQR on the Pico, with the joint-2 sensor wired across joint 1 by the cable loop from 2.5b (gains precomputed on the Mac, sent via PARAMS); (c) first test the plan's start in slow motion with the tapper arm clear; (d) **Done when:** ≥ 3 of 10 hardware swing-ups end balanced for 10 s, filmed. Any fewer by 1 Nov → report "double balances on hardware; swing-up shown in sim".
+- **Transitions (only after the hardware double swing-up works):** the 12 moves between DD/UU/UD/DU are planned and working in sim (`plan_transition.py`, `double_control.tour`). On hardware: re-plan them on the fitted model, then try the tour DD→UU→UD→DU→DD. Film whatever works.
 - **8.5** Optional, only if 8.4 is done early: a double-balance SAC policy in sim (and on hardware if time allows).
 - **🚦 Sun 1 Nov: stop.** Whatever state it's in becomes "progress + what's next" in the write-up. Film what works.
 

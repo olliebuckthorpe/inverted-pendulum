@@ -1,0 +1,90 @@
+{
+  "q3": {
+    "30T 0.30 m": {
+      "success": 10,
+      "catch_s": 2.2489999999998633,
+      "max_x_mm": 240.78868182735644,
+      "peak_supply_A": 5.302886849915866,
+      "rms_supply_A": 0.3637441188203767,
+      "longest_above_trip_ms": 2.0,
+      "peak_motor_A": 5.351716417528398,
+      "success_capped_5A": 10,
+      "largest_tap_rad_s": 3.603515625
+    },
+    "30T 0.40 m": {
+      "success": 10,
+      "catch_s": 2.3999999999998467,
+      "max_x_mm": 318.53356272141417,
+      "peak_supply_A": 5.367692936547881,
+      "rms_supply_A": 0.49916932915459783,
+      "longest_above_trip_ms": 3.0,
+      "peak_motor_A": 5.367692936547881,
+      "success_capped_5A": 10,
+      "largest_tap_rad_s": 2.734375
+    },
+    "20T 0.30 m": {
+      "success": 10,
+      "catch_s": 2.225999999999866,
+      "max_x_mm": 220.83540816489912,
+      "peak_supply_A": 5.067227336920624,
+      "rms_supply_A": 0.5203777809591374,
+      "longest_above_trip_ms": 0.0,
+      "peak_motor_A": 5.067227336920624,
+      "success_capped_5A": 10,
+      "largest_tap_rad_s": 2.958984375
+    },
+    "20T 0.40 m": {
+      "success": 0,
+      "catch_s": NaN,
+      "max_x_mm": 394.99075858186075,
+      "peak_supply_A": 4.918677977008674,
+      "rms_supply_A": 1.1585675102344157,
+      "longest_above_trip_ms": 0.0,
+      "peak_motor_A": 4.918677977008674,
+      "success_capped_5A": 0,
+      "largest_tap_rad_s": 2.265625
+    }
+  },
+  "q4": {
+    "30T 100 Hz": {
+      "largest_tap_rad_s": 3.3984375,
+      "swingup": 10,
+      "duty_chatter_rms": 0.06876001191605505
+    },
+    "30T 200 Hz": {
+      "largest_tap_rad_s": 3.525390625,
+      "swingup": 10,
+      "duty_chatter_rms": 0.0831292198786188
+    },
+    "30T 500 Hz": {
+      "largest_tap_rad_s": 3.603515625,
+      "swingup": 10,
+      "duty_chatter_rms": 0.11977006051935894
+    },
+    "30T 1000 Hz": {
+      "largest_tap_rad_s": 3.6328125,
+      "swingup": 10,
+      "duty_chatter_rms": 0.13289918418168575
+    },
+    "20T 100 Hz": {
+      "largest_tap_rad_s": 2.7978515625,
+      "swingup": 10,
+      "duty_chatter_rms": 0.07332664466501931
+    },
+    "20T 200 Hz": {
+      "largest_tap_rad_s": 2.900390625,
+      "swingup": 10,
+      "duty_chatter_rms": 0.07980105117652612
+    },
+    "20T 500 Hz": {
+      "largest_tap_rad_s": 2.958984375,
+      "swingup": 10,
+      "duty_chatter_rms": 0.10125815533581844
+    },
+    "20T 1000 Hz": {
+      "largest_tap_rad_s": 2.9833984375,
+      "swingup": 10,
+      "duty_chatter_rms": 0.11778054778378612
+    }
+  }
+}

@@ -28,10 +28,33 @@ head-to-head on the same real hardware using a test set fixed in advance.
 | Tier | What | Status by 5 Nov |
 |---|---|---|
 | **Must have** | **Single rod**: classical and AI both swing up and balance on the real rig; the full test set is run; filmed | Required |
-| **Stretch** | **Double rod**: balances on the real rig (started upright by hand; no double swing-up). LQR on hardware, with AI in simulation and possibly on hardware | Only after the single is done. **Hard stop 1 Nov** |
+| **Stretch** | **Double rod**: balances on the real rig (started upright by hand). LQR on hardware, with AI in simulation and possibly on hardware. **Double swing-up + hand-over to balance in simulation** (added 2026-09-24 at Ollie's request; classical = trajectory optimisation + time-varying LQR). **Transitions between all four resting positions (DD, UU, UD, DU) in simulation**, all 12 working (added 2026-09-24); on hardware, they come after the double swing-up, behind the same gates. **Double swing-up on hardware: Ollie decided to attempt it (24 Sep)**, see below | Only after the single is done. **Hard stop 1 Nov** |
 | **Reach** | Triple | **Out of scope before 5 Nov.** "What's next" in the write-up |
 
-**Out of scope:** double or triple swing-up on hardware, slip rings, a custom PCB, running the AI on the Mac
+**Double swing-up on hardware (decided 2026-09-24: attempt it, as the top of the stretch tier).** The sim
+shows it's physically possible with this motor, rail and PSU (sim/RESULTS-sim-phase.md), but no hobby build
+has been found that achieved it (the closest, Hackaday #12827, only did it in simulation). It stays behind the
+same gates: the single must be done first, then double balance, and **the double still stops on 1 Nov**. If
+the swing-up isn't working by then, the result is "double balances on hardware; swing-up shown in sim".
+What it needs beyond double balance (all found in the sim, 24 Sep; sim/RESULTS-sim-phase.md):
+- **A Kalman filter** on the Pico for the double (not plain differencing). With the AS5047P's datasheet noise
+  (0.068° RMS), differencing fails 0/10 and the Kalman filter succeeds 10/10. Its gains are precomputed on
+  the Mac, so the Pico only does small matrix-vector products.
+- **A "gentle, friction-margin" plan:** duty ≤ 0.6, cart within ±300 mm, planned assuming **1.5× the
+  measured joint-2 friction**. That plan swings up on 50/50 random rigs at realistic post-system-ID errors,
+  and 48/50 at twice those errors.
+- **The double's masses weighed and its joint friction measured** (free-swing decay), then the plan
+  recomputed on the fitted model (~10 min).
+- **Getting the joint-2 signal across joint 1: a flexible cable loop, not a slip ring** (decided on
+  evidence, 24 Sep). In the plan and in 20 flights on random rigs, rod 1 stays within −6°…251° (at most half a
+  turn from hanging), so nothing has to spin continuously. Slip rings were rejected: SenRing specifies its
+  capsule rings at 0.05 N·m (+0.01 N·m per 6 circuits), about 25× the 2 mN·m of drag the swing-up tolerates;
+  The Pi Hut's ring (£15.20) publishes no torque at all. The cable must twist softly: **≤ 0.5 mN·m/rad** if
+  unmodelled (the sim fails at 1.0). Use ultra-flexible stranded silicone wire (e.g. 30 AWG) in a long loop;
+  ABI needs only 4–5 wires. Bench-measure the stiffness (PLAN 2.5b). The firmware counts rod-1 turns and cuts
+  the motor beyond ±1 turn, to protect the cable.
+
+**Out of scope:** triple swing-up on hardware, a custom PCB, running the AI on the Mac
 in the loop, Isaac Sim, and hand-derived equations (optional later).
 
 ## 4. Definition of done
@@ -81,13 +104,15 @@ Prices were checked 2026-09-24. ✅ = confirmed on the seller's page; ⚠️ = s
 | 6 | Controller | **Raspberry Pi Pico 2 H** (with headers) | 1 | The Pi Hut | ✅ £5.80 | Now |
 | 7 | Angle sensor | **ams-OSRAM AS5047P-TS_EK_AB** adapter kit (14-bit SPI; **includes a 6×2.5 mm diametric magnet**) | 1 now, +1 for the double | Farnell / RS / Mouser UK | ⚠️ ~£13–17 (Digi-Key $16.66) | Now (2nd later) |
 | 8 | Motor driver | **Cytron MD13S** (6–30 V, 13 A, 3.3 V logic OK) | 1 | Active Robots (or RobotBits) | ⚠️ ~£15 (VAT status unclear) | Now |
-| 9 | Power supply | **Mean Well GST60A12-P1J**, 12 V 5 A, enclosed | 1 | **RS UK** (sold out at The Pi Hut) | ✅ £25.91 inc VAT | Now |
+| 9 | Power supply | **Mean Well GST60A12-P1J**, 12 V 5 A, enclosed (**or a larger 12 V unit if the sim says so**, see §8) | 1 | **RS UK** (sold out at The Pi Hut) | ✅ £25.91 inc VAT | **With the motor, after the sim phase** |
 | 10 | Barrel jack adapter | 2.1 mm DC jack → screw terminals | 1 | Pi Hut / Amazon | ⚠️ ~£2–3 | Now |
 | 11 | Bearings | 608ZZ (8 mm bore), pack of 10 | 1 pack | Amazon UK | ✅ £5.58 | Now |
 | 12 | Joint shaft | 8 mm silver steel, single cut length ~150–300 mm | 1 | eBay UK (not RS: 3 m minimum) | ⚠️ ~£5–6 | Now |
 | 13 | Rod | **Aluminium tube, 8 mm OD, 1 m** (cut to 30 cm, with spare for a 40 cm) | 1 | Wickes | ✅ £4.20 | Now |
 | 14 | E-stop | Latching mushroom switch, ≥10 A DC | 1 | Amazon UK | ⚠️ ~£8.49–9.99 | Now |
-| 15 | End-stops | Micro limit switch, roller lever, pack of 10 | 1 pack | Amazon UK | ✅ £6.99 | Now |
+| 15 | End-stops | Micro limit switch, roller lever, pack of 10 (**signal/relay-coil duty only**, see §8) | 1 pack | Amazon UK | ✅ £6.99 | Now |
+| 15a | Cut-off relay | **12 V automotive relay, 30–40 A contacts** (rated for 12 V DC loads), with socket/pigtail | 1 | Amazon UK / car-parts shop | ⚠️ ~£4–6 | Now |
+| 15b | Flyback diode | 1N4007 (across the relay coil) | 1 pack | Amazon UK | ⚠️ ~£1–2 | Now (skip if owned) |
 | 16 | Fuse | Inline blade fuse holders + mixed fuses (use **7.5 A**) | 1 kit | Amazon UK | ✅ £7.99 | Now |
 | 17 | Wiring | 18 AWG silicone red/black; Dupont jumpers; small breadboard | – | Amazon UK | ✅ £6.74 / ✅ £6.99 / ⚠️ ~£7.99 | Now (skip anything already owned) |
 | 18 | Fasteners | M3/M5 bolt and nut assortment | 1 | Amazon UK | ✅ £7.99 | Now (skip if owned) |
@@ -99,13 +124,13 @@ Prices were checked 2026-09-24. ✅ = confirmed on the seller's page; ⚠️ = s
 
 | | Low | High |
 |---|---|---|
-| Items 1–18 (order now) | ~£153 | ~£171 |
+| Items 1–18 + 15a/15b (order now; PSU moves to the motor order) | ~£158 | ~£179 |
 | Motor (item 19) | ~£55 | ~£70 |
 | Servo (item 20) | ~£3 | ~£5 |
 | **Upfront total** | **~£211** | **~£246** |
 | Later, for the double: 2nd AS5047P + carbon rod | +~£18 | +~£32 |
 
-⚠️ **This is over the £150–200 target, by about £11–46.** Ways to close the gap, in order:
+⚠️ **This is over the £150–200 target, by about £16–54** (the relay adds ~£5–8; a bigger PSU, if the sim needs one, would add ~£10–20 more). Ways to close the gap, in order:
 1. **Skip what's already owned** (breadboard, jumpers, bolts, wire): up to ~£30.
 2. **Find the cheapest Pololu seller**: ~£5–15.
 3. Print the idler around bearings already in the 608 pack. The 3D printer also replaces every bracket.
@@ -125,15 +150,24 @@ Do **not** save money on the rail, motor or sensor. Those are where precision de
 - **Driver:** the Cytron accepts 3.3 V logic. The BTS7960 was rejected (uncertain at 3.3 V) and the L298N
   (a ~2 V voltage drop).
 - **PSU:** an enclosed brick is beginner-safe. The PC's ATX supply was rejected (it's in a working PC, needed
-  for weeks, and the saving was only ~£10–15).
+  for weeks, and the saving was only ~£10–15). **Added 2026-09-24:** the GST60A12's overload protection trips at
+  105–150% of rated power into **hiccup mode** (Mean Well GST60A spec), i.e. ~5.25–7.5 A, while the motor's
+  stall current is 5.5 A and a full-speed reversal can draw ~10 A. So the sim logs supply current and decides
+  whether the 5 A unit is enough (§11 Q6); the PSU is ordered with the motor.
+- **Relay for the end-stops (added 2026-09-24):** micro switches are AC-rated. Omron's V-15 is 15 A at 250 V AC
+  but only 0.6 A at 125 V DC, with no 12 V DC rating; only the special V-21(IN) is rated 12 A at 30 V DC (Omron
+  V-series datasheet). DC arcs don't self-extinguish, so a micro switch breaking 5–10 A can weld shut and fail
+  unsafe. The end-stops therefore switch only a relay coil (~0.15 A), and an automotive relay, designed for 12 V
+  DC loads, breaks the motor current.
 
 ## 7. Mechanical design
 
 - **Rail:** 1 m MGN12, bolted flat to a rigid base, with printed end blocks holding the motor and idler.
 - **Cart:** 3D-printed and **as light as possible** (less mass means less force needed). It carries joint 1
   and its sensor.
-- **Drive:** GT2 6 mm belt, a metal pulley on the motor, and the idler at the far end. **Both 20T and 30T
-  pulleys are bought; the sim picks** (20T: ~46 N stall, 1.07 m/s; 30T: ~31 N, 1.60 m/s. Calculated from
+- **Drive:** GT2 6 mm belt, a metal pulley on the motor, and the idler at the far end. **30T chosen
+  (Ollie, 24 Sep), from the sim** (RESULTS-sim-phase.md §2: +22% robustness, because the rotor's reflected
+  inertia is 2.25× smaller than on 20T). Both pulleys are still bought (20T: ~46 N stall, 1.07 m/s; 30T: ~31 N, 1.60 m/s. Calculated from
   specs, not measured).
 - **Joint 1:** an 8 mm shaft through **two 608 bearings** in the cart. Two bearings stop the shaft tilting;
   one lets it bind and misaligns the sensor. The diametric magnet is glued to the shaft end, and the
@@ -150,13 +184,21 @@ Do **not** save money on the rail, motor or sensor. Those are where precision de
 
 ## 8. Electronics and safety wiring
 
-- **Power path:** PSU (12 V) → **7.5 A inline fuse** → **latching E-stop** → **end-stop switches (normally
-  closed, in series)** → Cytron MD13S → motor. The E-stop and end-stops cut motor power **independently of any
-  software**.
+- **Power path (revised 2026-09-24):** PSU (12 V) → **inline fuse** (7.5 A unless the §11 Q6 PSU decision
+  changes it) → **latching E-stop** → **relay contacts (normally open)** → Cytron MD13S → motor.
+- **Relay coil loop:** 12 V after the E-stop → **end-stop switches (normally closed, in series)** → relay coil →
+  ground, with a **flyback diode across the coil**. Hitting either end-stop, or pressing the E-stop, drops the
+  relay. The E-stop and end-stops therefore cut motor power **independently of any software**, and the
+  micro switches only ever carry coil current. After an end-stop trip, move the cart off the switch by hand
+  (power is off) and the relay re-closes.
 - **Logic:** the Pico 2 is powered by USB from the Mac. PWM + DIR go to the Cytron. The motor encoder A/B lines
   go to the Pico, decoded by PIO. The AS5047P connects over SPI. Every ground is shared.
-- **Also:** the end-stop states are read by the Pico so it can report *why* it stopped.
-- **To confirm in the plan:** the Cytron MD13S's exact 3.3 V input thresholds, from its datasheet.
+- **Also:** the end-stop states are read by the Pico so it can report *why* it stopped. The switches are
+  SPDT; how the Pico reads them without mixing 12 V into a 3.3 V pin (a spare contact, a divider or an
+  optocoupler) is decided in plan step 2.1.
+- **Cytron MD13S (from Cytron's user manual, re-verify in plan 2.1):** logic HIGH is 3.0–5.5 V, so the Pico's
+  3.3 V works with 0.3 V of margin; PWM is up to 20 kHz; its built-in current limit is 30 A, far above our
+  motor, so it gives no protection at our currents.
 - **Known issue to handle:** hard braking makes the motor act as a generator and push energy back into the
   supply. Decide on the mitigation in the plan (for example a bulk capacitor or TVS diode) after reading the
   Cytron and Mean Well datasheets.
@@ -227,6 +269,9 @@ The sim is built from the motor's datasheet. It answers, in this order:
 3. **Is 30 cm a sensible length**, or does 40 cm clearly help?
 4. **What loop rates are needed** for the single, and for the double?
 5. **For the double: which rod lengths, and which is at the bottom?**
+6. **Is the 12 V 5 A PSU enough?** Log the supply current through swing-up and balance (peak, RMS and time
+   above 5.25 A), and check whether swing-up still succeeds with the supply current capped at ~5 A. If yes,
+   buy the GST60A12; if not, buy a larger 12 V unit and resize the fuse. **Ordered with the motor.**
 
 **Time-box rule:** if an answer isn't clear by day 5, use the default (Pololu, 20T, 30 cm) and order anyway.
 The sim phase must not eat into hardware time. A datasheet-only sim is optimistic: it can show "clearly won't
@@ -275,7 +320,7 @@ used, and anything that was tuned on hardware.
 
 | Dates | Milestone |
 |---|---|
-| **Thu 24 – Mon 28 Sep** | Order everything except the motor. Sim phase (§11): MuJoCo model, datasheet motor model, answers 1–5. Learn the basics: Brunton's *Control Bootcamp*, Python. **Order the motor** by about 28 Sep |
+| **Thu 24 – Mon 28 Sep** | Order everything except the motor and PSU. Sim phase (§11): MuJoCo model, datasheet motor model, answers 1–6. Learn the basics: Brunton's *Control Bootcamp*, Python. **Order the motor and PSU** by about 28 Sep |
 | Parts arrive, ~26–30 Sep | Print the cart, end blocks and joint housings. Pico bring-up: blink → AS5047P over SPI → motor encoder over PIO → USB telemetry → **measure the latency** |
 | ~1–7 Oct | Motor arrives. Assemble the rig. **Safety first:** fuse, E-stop, end-stops, watchdog. Run system ID and fit the sim |
 | ~8–14 Oct | LQR balance (started upright) → energy swing-up → **classical complete**. Train the AI in the fitted sim |
@@ -320,6 +365,9 @@ used, and anything that was tuned on hardware.
 | One policy for swing-up + balance | Less evidence on hardware; two policies mirror the classical structure | Two policies can't hand over cleanly |
 | PC (ATX) power supply | In a working PC, needed for weeks, small saving | – |
 | Buy everything after the sim | Loses ~a week of parallel build time | – |
+| End-stops in series with motor power | Micro switches have no usable DC power rating (Omron V-15: 0.6 A at 125 V DC); DC arcs can weld them shut | Never; use the relay |
+| DC-rated micro switches (Omron V-21(IN), 12 A at 30 V DC) | Hard to source in the UK, only 12 A of headroom | The relay approach fails |
+| Upsizing the PSU before the sim | Adds cost before there's evidence it's needed | The sim shows swing-up needs more than ~5 A |
 
 ## 17. Evidence and sources
 
@@ -345,13 +393,17 @@ used, and anything that was tuned on hardware.
 - Pico PIO quadrature encoder: https://github.com/raspberrypi/pico-examples/blob/master/pio/quadrature_encoder/quadrature_encoder.pio
 - SimpleFOC MT6701 driver (I2C too slow for control): https://github.com/simplefoc/Arduino-FOC-drivers/blob/master/src/encoders/mt6701/README.md
 - AS5047P adapter kit (magnet included): https://uk.farnell.com/ams-osram-group/as5047p-ts-ek-ab/adapter-board-kit-position-sensor/dp/4158644
+- Mean Well GST60A series spec (overload 105–150%, hiccup mode): https://www.meanwell.com/Upload/PDF/GST60A/GST60A-SPEC.PDF
+- Omron V-series micro switch datasheet (V-15: 0.6 A at 125 V DC; V-21(IN): 12 A at 30 V DC): https://omronfs.omron.com/en_US/ecb/products/pdf/en-v.pdf
+- Cytron MD13S user manual (logic HIGH 3–5.5 V, 20 kHz, 30 A current limit): https://www.farnell.com/datasheets/3759023.pdf
 - WPILib motor safety (100 ms watchdog): https://docs.wpilib.org/en/2023_a/docs/software/hardware-apis/motors/wpi-drive-classes.html
 - COBS framing: https://blog.mbedded.ninja/programming/serialization-formats/consistent-overhead-byte-stuffing/
 - DeviceScript archived: https://github.com/microsoft/devicescript · Kaluma: https://kalumajs.org/
 
 ## 18. Open items for the plan
 
-- Confirm ⚠️ prices at checkout: rail at 1000 mm, AS5047P kit, MD13S VAT, E-stop, shaft.
+- Confirm ⚠️ prices at checkout: rail at 1000 mm, AS5047P kit, MD13S VAT, E-stop, shaft, relay.
+- How the Pico reads the end-stop states (plan 2.1), and the PSU/fuse size (sim Q6).
 - The Cytron MD13S's 3.3 V input thresholds, and the regenerative-braking mitigation (datasheets).
 - NN size and its inference-time benchmark on the RP2350.
 - The hand-over rules (classical and AI): the energy and angle thresholds, from the sim.
