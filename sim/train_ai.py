@@ -51,7 +51,8 @@ def evaluate(policy, task: str, n: int = 100, seed0: int = 10_000, env_kw: dict 
 
 
 if __name__ == "__main__":
-    # usage: train_ai.py task steps seed [variant]; variants set reward weights, policy rate and gamma
+    # usage: train_ai.py task steps seed [variant] [start-from checkpoint]
+    # variants set reward weights, policy rate and gamma; a start-from checkpoint makes it a curriculum stage
     task, steps, seed = sys.argv[1], int(sys.argv[2]), int(sys.argv[3])
     variant = sys.argv[4] if len(sys.argv) > 4 else ""
     VARIANTS = {
@@ -59,14 +60,23 @@ if __name__ == "__main__":
         "A": ({"w_x": 10.0, "w_da": 1.0}, 0.99),                          # strong centring + anti-jitter
         "B": ({"w_x": 10.0, "w_da": 1.0}, 0.995),                         # ... + longer look-ahead
         "C": ({"w_x": 10.0, "w_da": 1.0, "policy_hz": 50.0}, 0.99),       # ... at 50 decisions/s (≈ 2 s look-ahead)
+        "D": ({"w_x": 10.0, "w_xd": 2.0, "w_da": 1.0, "policy_hz": 50.0}, 0.995),  # C + cart-speed penalty, ~4 s look-ahead
+        # sanity check: fixed rig, rigid drive, no smoothing, no noise (SAC should master this quickly)
+        "E": ({"randomise_scale": 0.0, "compliant": False, "smooth_hz": 1000.0}, 0.99),
+        # curriculum stage 2: continue from stage 1 ("E") on the full randomised rig, with the anti-jitter penalty
+        "F": ({"w_da": 1.0}, 0.99),
     }
     env_kw, gamma = VARIANTS[variant]
     OUT.mkdir(parents=True, exist_ok=True)
     CKPT.mkdir(exist_ok=True)
     tag = f"{task}{variant}_seed{seed}"
     env = Monitor(PendulumEnv(task, **env_kw), filename=str(OUT / tag))
-    agent = SAC("MlpPolicy", env, policy_kwargs=dict(net_arch=[64, 64]), learning_starts=2000,
-                batch_size=256, learning_rate=3e-4, gamma=gamma, seed=seed, device="cpu", verbose=0)
+    start_from = sys.argv[5] if len(sys.argv) > 5 else None   # curriculum: a checkpoint to continue from
+    if start_from:
+        agent = SAC.load(CKPT / start_from, env=env, device="cpu", seed=seed, learning_starts=2000)
+    else:
+        agent = SAC("MlpPolicy", env, policy_kwargs=dict(net_arch=[64, 64]), learning_starts=2000,
+                    batch_size=256, learning_rate=3e-4, gamma=gamma, seed=seed, device="cpu", verbose=0)
     # Snapshots of the network while it learns: ~30 per run, for the training timelapse (ai_timelapse.py)
     snaps = CheckpointCallback(save_freq=max(steps // 30, 1000), save_path=str(CKPT / f"{tag}_snapshots"),
                                name_prefix=tag)
@@ -76,6 +86,7 @@ if __name__ == "__main__":
     agent.save(CKPT / tag)
     result = evaluate(agent, task, env_kw=env_kw)
     result.update({"task": task, "variant": variant, "env": env_kw, "gamma": gamma, "seed": seed, "steps": steps,
+                   "started_from": start_from,
                    "train_minutes": round(minutes, 1)})
     (OUT / f"{tag}.json").write_text(json.dumps(result, indent=2))
     print(f"{tag}: {result['success']}/{result['episodes']} randomised rigs, trained {minutes:.1f} min", flush=True)
