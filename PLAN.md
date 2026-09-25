@@ -231,6 +231,7 @@ Choose the numbers from the sim so that neither controller is favoured. **Commit
 **6.1 NN inference on the Pico.**
 - Export the SAC actor's deterministic mean path (the Linear + ReLU layers, then tanh) as float32 weights and send them via WEIGHTS. Implement the forward pass as plain matrix multiplication in C++.
 - **Benchmark:** time one inference on the Pico 2. **Done when:** it takes < 20% of the policy period, and the Pico's output matches PyTorch within 1e-4 on 1,000 recorded observations.
+- **Done early on the Mac (25 Sep):** `firmware/nn/mlp_policy.h` (the exact code the Pico will run) matches PyTorch to 5.4e-7 on 1,000 realistic-sim observations, via both the uploaded `.bin` and compiled-in `.h` weights (`sim/export_policy.py`, `sim/tests/test_export.py`, mutation-checked). Estimate: ~4.5k multiply-adds ≈ 0.1 ms at 150 MHz (~1% of the 10 ms policy period); 18.7 kB of weights. **Still to do on the Pico: measure the time, and repeat the 1e-4 check there.**
 
 **6.2 Balance policy on hardware** (started upright).
 - **Done when:** it balances ≥ 60 s and recovers from light taps. **Film it.**
