@@ -62,7 +62,8 @@ class PendulumEnv(gym.Env):
 
     def __init__(self, task: str = "balance", randomise_scale: float = 1.0, smooth_hz: float = 20.0,
                  episode_s: float | None = None, base: dict | None = None, compliant: bool = True,
-                 policy_hz: float = POLICY_HZ, w_x: float = 1.0, w_da: float = 0.1, w_xd: float = 0.0):
+                 policy_hz: float = POLICY_HZ, w_x: float = 1.0, w_da: float = 0.1, w_xd: float = 0.0,
+                 noise_deg: float | None = None):
         """w_x: cart-centring penalty; w_xd: cart-speed penalty (catches slow drift early); w_da: jitter penalty."""
         """compliant=True: motor drives the cart through gearbox play and a stretchy belt (plant.py's model)."""
         assert task in ("balance", "swingup")
@@ -71,6 +72,7 @@ class PendulumEnv(gym.Env):
         self.base = base or model.with_params(model.load_params(), supply__current_cap=5.0)
         self.scale = randomise_scale
         self.policy_hz, self.w_x, self.w_da, self.w_xd = policy_hz, w_x, w_da, w_xd
+        self.noise_deg = noise_deg   # if set, overrides the (randomised) sensor noise level
         self.episode_steps = round((episode_s or (10.0 if task == "balance" else 12.0)) * policy_hz)
         self.n_ctrl = round(CTRL_HZ / policy_hz)          # control cycles per policy decision
         self.alpha = 1 / (1 + CTRL_HZ / (2 * math.pi * smooth_hz))  # first-order smoothing per control cycle
@@ -82,6 +84,8 @@ class PendulumEnv(gym.Env):
         super().reset(seed=seed)
         rng = self.np_random
         self.p = randomise(self.base, rng, self.scale) if self.scale > 0 else self.base
+        if self.noise_deg is not None:
+            self.p = model.with_params(self.p, sensing__angle_noise_deg=self.noise_deg)
         self.m = model.build_single(self.p, compliant=self.compliant)
         self.d = mujoco.MjData(self.m)
         self.gap = model.backlash_halfwidth(self.p)

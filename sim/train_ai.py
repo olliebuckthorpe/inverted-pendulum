@@ -63,6 +63,16 @@ if __name__ == "__main__":
         "D": ({"w_x": 10.0, "w_xd": 2.0, "w_da": 1.0, "policy_hz": 50.0}, 0.995),  # C + cart-speed penalty, ~4 s look-ahead
         # sanity check: fixed rig, rigid drive, no smoothing, no noise (SAC should master this quickly)
         "E": ({"randomise_scale": 0.0, "compliant": False, "smooth_hz": 1000.0}, 0.99),
+        # ablation: the easy setup with ONE hard ingredient added back, to find which one breaks learning
+        "Es": ({"randomise_scale": 0.0, "compliant": False}, 0.99),                          # + 20 Hz smoothing
+        "Ed": ({"randomise_scale": 0.0, "smooth_hz": 1000.0}, 0.99),                          # + backlash / belt
+        "Er": ({"compliant": False, "smooth_hz": 1000.0}, 0.99),                              # + randomised rigs, noise
+        "Ej": ({"randomise_scale": 0.0, "compliant": False, "smooth_hz": 1000.0, "w_da": 1.0}, 0.99),  # + jitter penalty
+        "Erp": ({"compliant": False, "smooth_hz": 1000.0, "noise_deg": 0.0}, 0.99),                    # + random physics only
+        "Ern": ({"randomise_scale": 0.0, "compliant": False, "smooth_hz": 1000.0, "noise_deg": 0.068}, 0.99),  # + noise only
+        # G: the full rig (random physics, gearbox play, smoothing) but NO sensor noise while learning (noise is
+        # what breaks learning: +noise only 36/100, +random physics only 100/100). Evaluated WITH noise.
+        "G": ({"noise_deg": 0.0}, 0.99),
         # curriculum stage 2: continue from stage 1 ("E") on the full randomised rig, with the anti-jitter penalty
         "F": ({"w_da": 1.0}, 0.99),
     }
@@ -84,7 +94,9 @@ if __name__ == "__main__":
     agent.learn(total_timesteps=steps, callback=snaps)
     minutes = (time.time() - t0) / 60
     agent.save(CKPT / tag)
-    result = evaluate(agent, task, env_kw=env_kw)
+    # Always evaluate on the rig as it will really be: sensor noise on (training may have switched it off)
+    eval_kw = {k: v for k, v in env_kw.items() if k != "noise_deg"}
+    result = evaluate(agent, task, env_kw=eval_kw)
     result.update({"task": task, "variant": variant, "env": env_kw, "gamma": gamma, "seed": seed, "steps": steps,
                    "started_from": start_from,
                    "train_minutes": round(minutes, 1)})
