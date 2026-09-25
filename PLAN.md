@@ -130,6 +130,7 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 **2.3 Pico toolchain.**
 - Arduino IDE (or PlatformIO in VS Code) + the **arduino-pico core** (earlephilhower), board "Raspberry Pi Pico 2".
 - **Done when:** a blink sketch runs on the Pico 2.
+- **Progress 25 Sep:** arduino-cli 1.5.1 + arduino-pico 6.1.1 installed; the full firmware (`firmware/pendulum`, built by `firmware/build.sh`) compiles for the Pico 2 with no warnings (65 kB flash, 53.5 kB RAM). Still to do on the hardware: blink.
 
 **2.4 AS5047P over SPI.**
 - Read the 14-bit angle (with the parity/error-flag check) at 1 kHz and print it over USB.
@@ -140,6 +141,7 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 - Binary packets with **COBS framing + CRC16**. Messages: TELEMETRY (Pico→Mac), COMMAND/MODE, PARAMS (gains, filter constants), WEIGHTS (the NN, chunked), HEARTBEAT.
 - **Measure the round-trip latency:** the Mac sends a timestamped ping, the Pico echoes it, 10,000 samples. Log the median, p99 and max in `analysis/usb-latency.md`.
 - **Done when:** telemetry streams at the loop rate into **PlotJuggler** (via a small Python bridge to UDP/JSON), and the latency numbers are recorded.
+- **Progress 25 Sep:** protocol written for both sides (`firmware/PROTOCOL.md`, `firmware/core/protocol.h`, `sim/link.py`), byte-for-byte cross-tested with corruption rejection; `sim/telemetry_bridge.py` (PlotJuggler), `sim/usb_latency.py` (10k pings → `analysis/usb-latency.md`) and `sim/pico_setup.py` (all params + weights, consistency-tested against the firmware) ready. Still to do on the hardware: run them.
 
 **2.5b Joint-1 cable bench test (only if a hardware double swing-up is still planned; SPEC §3).** Replaces the slip ring. Run 4–6 strands of ultra-flexible stranded silicone wire (e.g. 30 AWG) from a board on a spare rod across joint 1 in a long, loose loop. (1) **Stiffness:** with the rod hanging, rotate the cable anchor by one full turn and measure how far the hanging rod is pulled off vertical (δ). The cable stiffness k ≈ m·g·l·sin δ / (2π). It must be ≤ 0.5 mN·m/rad, or else be measured precisely and added to the model. (2) **Signal:** stream the AS5047P (SPI and ABI) through the cable while swinging the rod ±1 turn by hand for 10 minutes; count bad frames or lost counts.
 - **Done when:** k and the error counts are in `hardware/joint1-cable.md`, with a go / no-go.
@@ -147,6 +149,7 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 **2.6 Fixed-rate loop skeleton.**
 - A timer-driven loop at the rate chosen in 1.6 (Q4). It measures its own execution time and jitter and reports them in telemetry.
 - **Done when:** the loop runs for 10 minutes with a max execution time below 50% of the period, and the jitter is logged.
+- **Progress 25 Sep:** loop on core 1 (busy-wait on the tick, reports exec time and jitter in telemetry; overrun fault), USB on core 0; control logic in `firmware/core/control.h`, parity-tested step by step against the sim and safety unit-tested (all mutation-checked). Slew limit 0.25/cycle chosen from sim (neither controller affected). Still to do on the hardware: the 10-minute run.
 
 ---
 
@@ -220,6 +223,7 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 - the trial order (alternating controllers) and the recorded fields.
 
 Choose the numbers from the sim so that neither controller is favoured. **Commit it. After this commit, the numbers don't change.**
+- **Draft ready (25 Sep):** `sim/protocol_numbers.py` measures both controllers through the same pipeline and writes `analysis/PROTOCOL-draft.md` (datasheet sim). Decisions made while drafting: a software kick **overrides** the duty for D ms (an additive kick was mostly cancelled by the controller); a push only counts as survived if the rod never passes the 35° hand-back angle (otherwise a knocked-down, re-swung-up rod counted). **Re-run on the fitted sim after Phase 4, add the tapper settings (7.1), then commit as `analysis/PROTOCOL.md`.**
 
 **5.5 React page skeleton** (branch `feature/web`; do this while the AI trains). Vite + React, sections for the hero video, "how it works" (rig, classical, AI, sim-to-real), the scorecard (empty), clips, and "what's next". Deploy a preview (Vercel, private or unlisted).
 - **Done when:** the skeleton is deployed with placeholder slots.
