@@ -111,7 +111,7 @@ Prices were checked 2026-09-24. ✅ = confirmed on the seller's page; ⚠️ = s
 | 13 | Rod | **Aluminium tube, 8 mm OD, 1 m** (cut to 30 cm, with spare for a 40 cm) | 1 | Wickes | ✅ £4.20 | Now |
 | 14 | E-stop | Latching mushroom switch, ≥10 A DC | 1 | Amazon UK | ⚠️ ~£8.49–9.99 | Now |
 | 15 | End-stops | Micro limit switch, roller lever, pack of 10 (**signal/relay-coil duty only**, see §8) | 1 pack | Amazon UK | ✅ £6.99 | Now |
-| 15a | Cut-off relay | **12 V automotive relay, 30–40 A contacts** (rated for 12 V DC loads), with socket/pigtail | 1 | Amazon UK / car-parts shop | ⚠️ ~£4–6 | Now |
+| 15a | Brake relay | **12 V automotive CHANGEOVER relay, 5-pin (30 / 87 / 87a), 30–40 A contacts**, with socket/pigtail. In the motor lead: drops → shorts the motor (hardware/electronics.md) | 1 | Amazon UK / car-parts shop | ⚠️ ~£4–6 | Now |
 | 15b | Flyback diode | 1N4007 (across the relay coil) | 1 pack | Amazon UK | ⚠️ ~£1–2 | Now (skip if owned) |
 | 15c | Schottky diode | ≥ 8 A, ≥ 40 V (e.g. MBR1045, TO-220): stops braking energy reaching the PSU (hardware/electronics.md) | 1 | Any UK electronics seller | ⚠️ ~£1 | Now |
 | 15d | Bulk capacitor | 2200 µF 35 V low-ESR electrolytic, at the driver | 1 | Any UK electronics seller | ⚠️ ~£1–2 | Now |
@@ -188,15 +188,17 @@ Do **not** save money on the rail, motor or sensor. Those are where precision de
 
 ## 8. Electronics and safety wiring
 
-- **Power path (revised 2026-09-25, PLAN 2.1; full diagram in hardware/electronics.md):** PSU (12 V) →
-  **7.5 A fuse** → **latching E-stop** → **relay contacts (normally open)** → **Schottky diode** → bus with a
-  **2200 µF capacitor + TVS clamp** → Cytron MD13S → motor. The diode stops braking energy reaching the PSU,
-  whose over-voltage protection (12.6–16.2 V) latches off until re-powered.
-- **Relay coil loop:** 12 V after the E-stop → **end-stop switches (normally closed, in series)** → relay coil →
-  ground, with a **flyback diode across the coil**. Hitting either end-stop, or pressing the E-stop, drops the
-  relay. The E-stop and end-stops therefore cut motor power **independently of any software**, and the
-  micro switches only ever carry coil current. After an end-stop trip, move the cart off the switch by hand
-  (power is off) and the relay re-closes.
+- **Power path (revised 2026-09-25; full diagram in hardware/electronics.md):** PSU (12 V) → **7.5 A fuse**
+  → **latching E-stop** → **Schottky diode** → bus with a **2200 µF capacitor + TVS clamp** → Cytron MD13S.
+  The diode stops braking energy reaching the PSU, whose over-voltage protection (12.6–16.2 V) latches off
+  until re-powered.
+- **Brake relay in the motor lead (revised 2026-09-25):** a 5-pin changeover automotive relay connects the
+  motor to the MD13S when energised and **shorts the motor when it drops**. The sim shows cutting power lets
+  the cart coast 720–840 mm from top speed (into the rail end); shorting the motor stops it in ~110 mm.
+- **Relay coil loop:** 12 V after the E-stop → **end-stop switches (normally closed, in series)** → relay coil
+  → ground, with a **flyback diode across the coil**. The E-stop, either end-stop, or a power failure drops
+  the relay and brakes the motor **independently of any software**; the micro switches only carry coil
+  current. End-stops trigger at about ±350 mm, with printed TPU bumpers at the rail ends.
 - **Logic:** the Pico 2 is powered by USB from the Mac. PWM + DIR go to the Cytron. The motor encoder A/B lines
   go to the Pico, decoded by PIO. The AS5047P connects over SPI. Every ground is shared.
 - **Also:** the end-stop states are read by the Pico so it can report *why* it stopped. The switches are

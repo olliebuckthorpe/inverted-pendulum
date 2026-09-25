@@ -5,31 +5,46 @@ or measured in the sim (`sim/`). Decisions were made by Ollie from the options a
 
 ## 1. Power path
 
+**Revised 25 Sep (brake relay):** the relay no longer cuts the driver's supply; it sits in the **motor lead**
+and **shorts the motor when it drops**. Sim, from top speed 1.6 m/s: cutting power lets the cart coast
+**720–840 mm** (into the rail end); shorting the motor stops it in **100–118 mm** (the motor becomes a
+generator driving current through its own windings, which brakes it).
+
 ```
-                        ┌──────────────── relay coil loop (signal current only, ~0.15 A) ────────────────┐
-                        │                                                                                   │
- Mean Well   ┌───────┐  │  ┌─────────┐      P12      ┌──────────┐  N1  ┌──────────┐  N2   ┌──────────────┐  │
- GST60A12 +──┤ 7.5 A ├──┴──┤ E-stop  ├───────┬───────┤ end-stop ├──────┤ end-stop ├───────┤ relay coil   ├──┴── GND
- 12 V 5 A    │ fuse  │     │ latching│       │       │ LEFT (NC)│      │RIGHT (NC)│       │ 12 V, 1N4007 │
-             └───────┘     │ NC      │       │       └──────────┘      └──────────┘       │ across coil  │
-                           └─────────┘       │                                            └──────────────┘
-                                             │   relay contacts (NO, 30–40 A)
-                                             └──────────────/ ──────────┐
-                                                                        │
-                                              Schottky ≥ 8 A, ≥ 40 V    ▼  (anode → cathode: energy can't flow back)
-                                                                        │
-                                   BUS ──────────────┬──────────────────┼──────────────┐
-                                                     │                  │              │
-                                              2200 µF 35 V        TVS 1.5KE22A     Cytron MD13S POWER+
-                                              low-ESR (+ to BUS)  (cathode to BUS)  MD13S POWER− → GND
-                                                     │                  │              │  MA/MB → motor red/black
- GND ────────────────────────────────────────────────┴──────────────────┴──────────────┴── common with Pico GND
+ Mean Well   ┌───────┐   ┌─────────┐      P12
+ GST60A12 +──┤ 7.5 A ├───┤ E-stop  ├───────┬──────────────────────────────────────────────┐
+ 12 V 5 A    │ fuse  │   │latching │       │                                              │
+             └───────┘   │ NC      │       │  relay coil loop (signal current only)       │
+                         └─────────┘       ├──┤end-stop L (NC)├─N1─┤end-stop R (NC)├─N2─┤relay coil├── GND
+                                           │                                (1N4007 across the coil)
+                                           ▼  Schottky ≥ 8 A, ≥ 40 V (energy can't flow back to the PSU)
+                                           │
+                        BUS ───────────────┼────────────┬───────────────┐
+                                           │            │               │
+                                     2200 µF 35 V   TVS 1.5KE22A    MD13S POWER+ (POWER− → GND)
+                                           │            │               │
+ GND ──────────────────────────────────────┴────────────┴───────────────┴── common with the Pico's GND
+
+ MD13S MA ───────────── relay 87  (NO)          relay: 12 V automotive CHANGEOVER, 5-pin (30 / 87 / 87a)
+                                   ╲
+                         relay 30 (COM) ──────── motor lead RED
+                                   ╱
+ motor lead BLACK ──┬── relay 87a (NC)          energised (all clear):  30–87  → motor driven by the MD13S
+                    │                           dropped (any trip):     30–87a → motor leads shorted = braking
+ MD13S MB ──────────┘
 ```
 
-- **Fuse first**, then the **latching E-stop**, then the split: the relay coil loop and the motor feed.
-- **End-stops only carry the relay coil's current.** Either end-stop, or the E-stop, drops the relay and cuts
-  motor power independently of software (SPEC §8). The switches never break motor current (micro switches
-  have no usable DC power rating: Omron V-15 is 0.6 A at 125 V DC).
+- **Fuse first**, then the **latching E-stop**, then the split: the relay coil loop and the driver supply.
+- **Pressing the E-stop** removes 12 V from both the driver and the relay coil, so the relay drops and shorts
+  the motor. **Hitting an end-stop** drops the relay the same way. No software is involved (SPEC §8), and a
+  power failure also leaves the motor shorted, braked (fail-safe).
+- **End-stops only carry the relay coil's current** (micro switches have no usable DC power rating: Omron
+  V-15 is 0.6 A at 125 V DC). The relay's contacts carry the motor and braking current (~5.3 A shorted at
+  1.6 m/s: 11.6 V / 2.18 Ω), well inside a 30–40 A automotive relay.
+- **End-stop position: trigger at X ≈ ±350 mm** (cart centre), so the ~118 mm braking distance fits before the
+  carriage reaches the rail end (~±477 mm). The controllers use at most ±325 mm. **Printed TPU bumpers** at the
+  rail ends absorb anything left over.
+- **Firmware adds a speed-aware soft limit:** brake early if |x| + v²/(2·a_brake) would pass the soft limit.
 - **Schottky diode + capacitor + TVS (braking energy), decided 25 Sep:** braking pushes energy back into the
   supply. The GST60A12's over-voltage protection is 12.6–16.2 V and **latches off until re-powered**. In the
   sim, the worst 50 ms of returned energy is 164 mJ (single swing-up) and 146 mJ (double tour); peak reverse
@@ -72,7 +87,7 @@ the PSU regulates at 12 V, so they never see the braking spike.
 
 | P12 | N1 | N2 | Meaning |
 |---|---|---|---|
-| H | H | H | All clear, relay can be on |
+| H | H | H | All clear, relay energised (motor connected to the driver) |
 | H | L | L | **Left end-stop hit** |
 | H | H | L | **Right end-stop hit** |
 | L | L | L | **E-stop pressed** (or no 12 V) |
@@ -86,7 +101,8 @@ HIGH, measure ≥ 3.0 V at the MD13S input (and ≤ 0.5 V for LOW). If it reads 
 
 - **Motor off at power-on and during reset:** PWM is pulled LOW, so the MD13S brakes the motor; the RP2350's
   pins also start with pull-downs.
-- **E-stop and end-stops cut motor power with no software involved**, and the Pico can report which one.
+- **E-stop and end-stops disconnect the motor from the driver and short it (braking) with no software
+  involved**, and the Pico can report which one.
 - **Braking energy can't trip the PSU** (diode), and the bus is limited by the capacitor and TVS.
 - Still to be proven on the bench, not assumed: every item in PLAN 3.4.
 
