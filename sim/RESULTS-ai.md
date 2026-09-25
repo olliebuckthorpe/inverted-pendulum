@@ -1,5 +1,16 @@
 # AI results so far (PLAN 5.3, early run on the datasheet sim), 25 Sep 2026
 
+**Update (multi-seed, fair selection, `select_ai.py`): the chosen AI controller is `swingupE_seed3` →
+`balanceGc_seed4`, handing over at 15°. Hold-out, 200 rigs scored once: 96.0% with realistic varied noise,
+96.5% at exactly the datasheet noise.** It was chosen from 80 swing-up × catch-balance × hand-over-angle
+combinations on 100 separate validation rigs; the median combination scored only 42/100, so training
+several seeds and selecting fairly is part of the method, not an optional extra. New swing-up seeds scored
+92, 94, 86 (seeds 0/1: 82, 48); catch-balance seeds scored 49, 5, 62 from hand-over-like starts. The
+learning curves show repeated collapses and recoveries (a known SAC instability), so the final training
+should keep the best snapshot by validation score, not the last one.
+
+**Earlier result (kept for the record):**
+
 **PLAN 5.3 targets are met in the randomised, datasheet-based sim:**
 
 | Target | Result | Policies |

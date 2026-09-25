@@ -21,7 +21,7 @@ with imageio.get_writer(out, fps=T.FPS, codec="libx264", quality=8, macro_block_
     for k in range(n):
         env = PendulumEnv("swingup", episode_s=8.0)
         obs, _ = env.reset(seed=77_000 + k)
-        ctrl = H.HandOver(swing, bal, 10.0)
+        ctrl = H.HandOver(swing, bal, float(sys.argv[5]) if len(sys.argv) > 5 else 10.0)
         m = model.build_single(env.p); d = mujoco.MjData(m); r = mujoco.Renderer(m, T.H, T.W)
         pole = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_GEOM, "pole")
         done, frames = False, []
