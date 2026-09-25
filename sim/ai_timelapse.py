@@ -80,7 +80,7 @@ def main():
             hours = steps / POLICY_HZ / 3600
             verdict = f"fell after {fell_at:.1f} s" if fell_at is not None else ("balanced" if task == "balance" else "stayed on the rail")
             lines = [f"AI {'balance' if task == 'balance' else 'swing-up'}: after {steps:,} practice steps",
-                     f"≈ {hours:.1f} h of simulated practice  ·  this attempt: {verdict}"]
+                     f"~{hours:.1f} h of simulated practice  ·  this attempt: {verdict}"]
             for k in range(0, len(frames), int(POLICY_HZ / FPS)):
                 d.qpos[0], d.qpos[1] = frames[k]
                 mujoco.mj_forward(m, d)

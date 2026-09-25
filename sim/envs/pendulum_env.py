@@ -61,15 +61,18 @@ class PendulumEnv(gym.Env):
     metadata = {"render_modes": []}
 
     def __init__(self, task: str = "balance", randomise_scale: float = 1.0, smooth_hz: float = 20.0,
-                 episode_s: float | None = None, base: dict | None = None, compliant: bool = True):
+                 episode_s: float | None = None, base: dict | None = None, compliant: bool = True,
+                 policy_hz: float = POLICY_HZ, w_x: float = 1.0, w_da: float = 0.1):
+        """w_x: cart-centring penalty weight; w_da: penalty on action changes (jitter)."""
         """compliant=True: motor drives the cart through gearbox play and a stretchy belt (plant.py's model)."""
         assert task in ("balance", "swingup")
         self.task = task
         self.compliant = compliant
         self.base = base or model.with_params(model.load_params(), supply__current_cap=5.0)
         self.scale = randomise_scale
-        self.episode_steps = round((episode_s or (10.0 if task == "balance" else 12.0)) * POLICY_HZ)
-        self.n_ctrl = round(CTRL_HZ / POLICY_HZ)          # control cycles per policy decision
+        self.policy_hz, self.w_x, self.w_da = policy_hz, w_x, w_da
+        self.episode_steps = round((episode_s or (10.0 if task == "balance" else 12.0)) * policy_hz)
+        self.n_ctrl = round(CTRL_HZ / policy_hz)          # control cycles per policy decision
         self.alpha = 1 / (1 + CTRL_HZ / (2 * math.pi * smooth_hz))  # first-order smoothing per control cycle
         self.observation_space = gym.spaces.Box(-np.inf, np.inf, (6,), np.float32)
         self.action_space = gym.spaces.Box(-1.0, 1.0, (1,), np.float32)
@@ -138,7 +141,7 @@ class PendulumEnv(gym.Env):
         self.last_action = a
         if self.task == "balance":
             fell = abs(th) > 0.5
-            reward = 1.0 - 2.0 * th * th - 1.0 * x * x - 0.02 * thd * thd - 0.05 * a * a - 0.1 * da * da
+            reward = 1.0 - 2.0 * th * th - self.w_x * x * x - 0.02 * thd * thd - 0.05 * a * a - self.w_da * da * da
             terminated = bool(fell or off_rail)
             if terminated:
                 reward -= 20.0
@@ -146,7 +149,7 @@ class PendulumEnv(gym.Env):
             # swing-up: reward being up (cos θ = 1), being centred and slow near the top; penalise effort and
             # jerky actions; hitting the rail ends the episode with a penalty
             up = math.cos(th)
-            reward = up - 0.5 * x * x - 0.05 * a * a - 0.1 * da * da
+            reward = up - 0.5 * self.w_x * x * x - 0.05 * a * a - self.w_da * da * da
             if up > 0.9:
                 reward += 1.0 - 0.02 * thd * thd
             terminated = bool(off_rail)
@@ -154,5 +157,5 @@ class PendulumEnv(gym.Env):
                 reward -= 50.0
         self.upright_time = self.upright_time + 1 if abs(th) < math.radians(10) else 0
         truncated = self.k >= self.episode_steps
-        info = {"th": th, "x": x, "i_peak": i_peak, "upright_s": self.upright_time / POLICY_HZ}
+        info = {"th": th, "x": x, "i_peak": i_peak, "upright_s": self.upright_time / self.policy_hz}
         return self._obs(), float(reward), terminated, truncated, info
