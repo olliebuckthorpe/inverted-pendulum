@@ -152,7 +152,7 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 
 ## Phase 3 — Assembly + safety: motor arrives ~Wed 30 Sep – Sun 4 Oct (branch `feature/rig-safety`)
 
-**3.1 Mechanical assembly.** The rail on a rigid, flat base (clamped to the desk), the motor and idler blocks, the belt tensioned (firm, with no slack but not over-tight), the cart, the joint, and the 30 cm rod.
+**3.1 Mechanical assembly.** The rail on the front face of a stiff beam clamped along the desk's front edge, so the rods hang over the edge (decided 25 Sep; hardware/cad/LAYOUT.md), the motor and idler blocks, the belt tensioned (firm, with no slack but not over-tight), the cart, the joint, and the 30 cm rod.
 
 **3.2 Power wiring per SPEC §8.** PSU → fuse → E-stop → relay contacts → MD13S → motor; relay coil fed through the NC end-stops in series, with a flyback diode. The regen mitigation from 2.1. Shared ground with the Pico.
 
