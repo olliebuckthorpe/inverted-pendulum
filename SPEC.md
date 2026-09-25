@@ -113,6 +113,10 @@ Prices were checked 2026-09-24. ✅ = confirmed on the seller's page; ⚠️ = s
 | 15 | End-stops | Micro limit switch, roller lever, pack of 10 (**signal/relay-coil duty only**, see §8) | 1 pack | Amazon UK | ✅ £6.99 | Now |
 | 15a | Cut-off relay | **12 V automotive relay, 30–40 A contacts** (rated for 12 V DC loads), with socket/pigtail | 1 | Amazon UK / car-parts shop | ⚠️ ~£4–6 | Now |
 | 15b | Flyback diode | 1N4007 (across the relay coil) | 1 pack | Amazon UK | ⚠️ ~£1–2 | Now (skip if owned) |
+| 15c | Schottky diode | ≥ 8 A, ≥ 40 V (e.g. MBR1045, TO-220): stops braking energy reaching the PSU (hardware/electronics.md) | 1 | Any UK electronics seller | ⚠️ ~£1 | Now |
+| 15d | Bulk capacitor | 2200 µF 35 V low-ESR electrolytic, at the driver | 1 | Any UK electronics seller | ⚠️ ~£1–2 | Now |
+| 15e | TVS diode | ~21–23 V breakdown, unidirectional (e.g. 1.5KE22A) | 1 | Any UK electronics seller | ⚠️ ~£0.50 | Now |
+| 15f | Resistors | 10 kΩ ×5, 3.3 kΩ ×3, 1 kΩ ×2 (pull-downs, end-stop dividers, encoder series) | – | Any UK electronics seller | ⚠️ ~£1–5 | Now (skip if a kit is owned) |
 | 16 | Fuse | Inline blade fuse holders + mixed fuses (use **7.5 A**) | 1 kit | Amazon UK | ✅ £7.99 | Now |
 | 17 | Wiring | 18 AWG silicone red/black; Dupont jumpers; small breadboard | – | Amazon UK | ✅ £6.74 / ✅ £6.99 / ⚠️ ~£7.99 | Now (skip anything already owned) |
 | 18 | Fasteners | M3/M5 bolt and nut assortment | 1 | Amazon UK | ✅ £7.99 | Now (skip if owned) |
@@ -184,8 +188,10 @@ Do **not** save money on the rail, motor or sensor. Those are where precision de
 
 ## 8. Electronics and safety wiring
 
-- **Power path (revised 2026-09-24):** PSU (12 V) → **inline fuse** (7.5 A unless the §11 Q6 PSU decision
-  changes it) → **latching E-stop** → **relay contacts (normally open)** → Cytron MD13S → motor.
+- **Power path (revised 2026-09-25, PLAN 2.1; full diagram in hardware/electronics.md):** PSU (12 V) →
+  **7.5 A fuse** → **latching E-stop** → **relay contacts (normally open)** → **Schottky diode** → bus with a
+  **2200 µF capacitor + TVS clamp** → Cytron MD13S → motor. The diode stops braking energy reaching the PSU,
+  whose over-voltage protection (12.6–16.2 V) latches off until re-powered.
 - **Relay coil loop:** 12 V after the E-stop → **end-stop switches (normally closed, in series)** → relay coil →
   ground, with a **flyback diode across the coil**. Hitting either end-stop, or pressing the E-stop, drops the
   relay. The E-stop and end-stops therefore cut motor power **independently of any software**, and the
@@ -196,12 +202,13 @@ Do **not** save money on the rail, motor or sensor. Those are where precision de
 - **Also:** the end-stop states are read by the Pico so it can report *why* it stopped. The switches are
   SPDT; how the Pico reads them without mixing 12 V into a 3.3 V pin (a spare contact, a divider or an
   optocoupler) is decided in plan step 2.1.
-- **Cytron MD13S (from Cytron's user manual, re-verify in plan 2.1):** logic HIGH is 3.0–5.5 V, so the Pico's
+- **Cytron MD13S (verified in PLAN 2.1 from the user manual v1.1):** logic HIGH is 3.0–5.5 V, so the Pico's
   3.3 V works with 0.3 V of margin; PWM is up to 20 kHz; its built-in current limit is 30 A, far above our
   motor, so it gives no protection at our currents.
-- **Known issue to handle:** hard braking makes the motor act as a generator and push energy back into the
-  supply. Decide on the mitigation in the plan (for example a bulk capacitor or TVS diode) after reading the
-  Cytron and Mean Well datasheets.
+- **Braking energy (decided 2026-09-25):** diode + 2200 µF + TVS, sized from the sim (worst burst ~0.16 J;
+  bus peaks ≈ 17.8 V, under the MD13S's 30 V). The Pico's PWM and DIR pins get 10 kΩ pull-downs so the motor
+  is braked (MD13S: PWM LOW = outputs LOW) while the Pico boots or is unplugged. Logic level: direct
+  connection, measured ≥ 3.0 V before any motor power (the RP2350 guarantees only 2.62 V HIGH).
 
 ## 9. Firmware (Pico 2, Arduino-style C++ on the arduino-pico core)
 

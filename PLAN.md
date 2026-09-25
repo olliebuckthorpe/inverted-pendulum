@@ -119,7 +119,7 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 - Regenerative braking: decide on a mitigation from the MD13S and GST60A12 docs (a bulk electrolytic capacitor across the supply at the driver and/or a TVS diode) and add it to the parts list if needed.
 - **End-stop sensing:** decide how the Pico reads the end-stop states without 12 V reaching a 3.3 V pin (SPEC §8 relay loop).
 - Record the findings in `hardware/electronics.md` with a wiring diagram (a drawn photo is fine).
-- **Done when:** `electronics.md` has the power path from SPEC §8, the pin map, and both decisions.
+- **Done when:** `electronics.md` has the power path from SPEC §8, the pin map, and both decisions. ✅ 25 Sep (`hardware/electronics.md`; decisions: direct logic + measure, diode + 2200 µF + TVS, voltage-divider end-stop sensing).
 
 **2.2 CAD + prints** (`hardware/`, keep the STEP/STL files in git).
 - Parts: the cart (mounts on the MGN12H; holds two 608s for joint 1 and the AS5047P board 1–1.5 mm from the shaft end, **adjustable**, e.g. slotted holes or shims); the motor end block (motor mount + 20T/30T pulley); the idler end block; a belt clamp on the cart; the rod hub (clamps the 8 mm tube to the shaft); end-stop mounts at both ends; the E-stop enclosure.
