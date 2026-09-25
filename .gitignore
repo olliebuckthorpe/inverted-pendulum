@@ -20,5 +20,5 @@ media/clips/
 # Sim videos (regenerate with sim/watch.py --video)
 sim/videos/
 sim/results/logs/
-sim/results/logs/
 firmware/build/
+hardware/cad/.venv/

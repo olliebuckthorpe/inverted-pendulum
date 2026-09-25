@@ -119,7 +119,7 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 - Regenerative braking: decide on a mitigation from the MD13S and GST60A12 docs (a bulk electrolytic capacitor across the supply at the driver and/or a TVS diode) and add it to the parts list if needed.
 - **End-stop sensing:** decide how the Pico reads the end-stop states without 12 V reaching a 3.3 V pin (SPEC §8 relay loop).
 - Record the findings in `hardware/electronics.md` with a wiring diagram (a drawn photo is fine).
-- **Done when:** `electronics.md` has the power path from SPEC §8, the pin map, and both decisions.
+- **Done when:** `electronics.md` has the power path from SPEC §8, the pin map, and both decisions. ✅ 25 Sep (`hardware/electronics.md`; decisions: direct logic + measure, diode + 2200 µF + TVS, voltage-divider end-stop sensing).
 
 **2.2 CAD + prints** (`hardware/`, keep the STEP/STL files in git).
 - Parts: the cart (mounts on the MGN12H; holds two 608s for joint 1 and the AS5047P board 1–1.5 mm from the shaft end, **adjustable**, e.g. slotted holes or shims); the motor end block (motor mount + 20T/30T pulley); the idler end block; a belt clamp on the cart; the rod hub (clamps the 8 mm tube to the shaft); end-stop mounts at both ends; the E-stop enclosure.
@@ -155,16 +155,18 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 
 ## Phase 3 — Assembly + safety: motor arrives ~Wed 30 Sep – Sun 4 Oct (branch `feature/rig-safety`)
 
-**3.1 Mechanical assembly.** The rail on a rigid, flat base (clamped to the desk), the motor and idler blocks, the belt tensioned (firm, with no slack but not over-tight), the cart, the joint, and the 30 cm rod.
+**3.1 Mechanical assembly.** The rail on the front face of a stiff beam clamped along the desk's front edge, so the rods hang over the edge (decided 25 Sep; hardware/cad/LAYOUT.md), the motor and idler blocks, the belt tensioned (firm, with no slack but not over-tight), the cart, the joint, and the 30 cm rod.
 
-**3.2 Power wiring per SPEC §8.** PSU → fuse → E-stop → relay contacts → MD13S → motor; relay coil fed through the NC end-stops in series, with a flyback diode. The regen mitigation from 2.1. Shared ground with the Pico.
+**3.2 Power wiring per SPEC §8 / hardware/electronics.md.** PSU → fuse → E-stop → Schottky → bus (2200 µF + TVS) → MD13S; motor via the changeover brake relay (30 motor red, 87 MD13S MA, 87a motor black); relay coil fed through the NC end-stops in series, with a flyback diode. The regen mitigation from 2.1. Shared ground with the Pico.
 
 **3.3 Motor encoder via PIO.** Port `pico-examples/pio/quadrature_encoder` to arduino-pico.
 - **Done when:** moving the cart by hand along the whole rail gives a consistent count, and the counts per metre (from the pulley geometry) are verified with a ruler to within 1%.
 
 **3.4 Safety checklist 🚦 (Sun 4 Oct).** Every item must be tested and **seen working**, then logged in `hardware/safety-checklist.md` with the date:
-- [ ] The E-stop cuts motor power mid-motion (tested at low duty).
-- [ ] Each end-stop drops the relay (cutting motor power) when hit, and the Pico reports which one.
+- [ ] The E-stop cuts motor power mid-motion (tested at low duty) and the motor is braked (shorted), not coasting.
+- [ ] Each end-stop drops the relay when hit: the motor is disconnected and shorted, the cart stops within ~120 mm (test at moderate speed first), and the Pico reports which one.
+- [ ] Pressing the E-stop mid-motion also brakes the cart (relay drops).
+- [ ] The speed-aware soft limit brakes before the end-stops at full speed.
 - [ ] The heartbeat watchdog: pulling the USB or killing the Mac script **stops the motor within 100 ms**.
 - [ ] The Pico hardware watchdog: a deliberate hang in the firmware → reset → motor off.
 - [ ] **The motor is off on boot and on reset** (no twitch).
