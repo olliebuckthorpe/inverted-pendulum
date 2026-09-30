@@ -31,6 +31,10 @@ head-to-head on the same real hardware using a test set fixed in advance.
 | **Stretch** | **Double rod**: balances on the real rig (started upright by hand). LQR on hardware, with AI in simulation and possibly on hardware. **Double swing-up + hand-over to balance in simulation** (added 2026-09-24 at Ollie's request; classical = trajectory optimisation + time-varying LQR). **Transitions between all four resting positions (DD, UU, UD, DU) in simulation**, all 12 working (added 2026-09-24); on hardware, they come after the double swing-up, behind the same gates. **Double swing-up on hardware: Ollie decided to attempt it (24 Sep)**, see below | Only after the single is done. **Hard stop 1 Nov** |
 | **Reach** | Triple | **Out of scope before 5 Nov.** "What's next" in the write-up |
 
+**AI for the double (added 2026-09-30 at Ollie's request):** the AI double balance in sim is done (97–100/100
+on realistic rigs, `sim/RESULTS-ai-double.md`); an **AI double swing-up in sim is an exploratory experiment**,
+reported honestly whether or not it learns. Neither changes the hardware order: classical double first.
+
 **Double swing-up on hardware (decided 2026-09-24: attempt it, as the top of the stretch tier).** The sim
 shows it's physically possible with this motor, rail and PSU (sim/RESULTS-sim-phase.md), but no hobby build
 has been found that achieved it (the closest, Hackaday #12827, only did it in simulation). It stays behind the
