@@ -241,7 +241,9 @@ The last three have to be balanced.
 - **Balance:** all three unstable positions are controllable (rank 6/6) and hold 5/5 for 20 s at datasheet
   noise with the Kalman filter. DU with plain differencing managed only 2/5.
 - **All 12 transitions planned** (`plan_transition.py`: duty ≤ 0.6, cart ±300 mm, joint-2 friction ×1.5,
-  rod 1 within ±1 turn of hanging for the cable) and flown with TVLQR + Kalman filter (`fly_transitions.py`):
+  rod 1 within ±1 turn of hanging for the cable) and flown with TVLQR + Kalman filter (`fly_transitions.py`).
+  (Times below are for the 0.40 kg cart; re-planned for 0.16 kg on 30 Sep, same success, see the cart mass
+  section.)
 
 | From → to | Time | Nominal rig | Random post-sysid rigs |
 |---|---|---|---|
@@ -286,6 +288,24 @@ sensor noise, slew). Scripts: `clone_motor_single.py`, `clone_motor_double.py`, 
 - (The kick ladder isn't comparable across motors: a "duty = +1 for D ms" kick is weaker on a weaker motor.)
 - **Decision (Ollie, 29 Sep): Pololu #4757 from TME**, because the double swing-up on hardware is in scope.
   The clone's figures are unverified seller numbers, which only strengthens that.
+
+## Cart mass re-check: 0.16 kg instead of the 0.40 kg guess (30 Sep)
+
+The CAD puts the cart at ≈ 145 g (hardware/cad/LAYOUT.md); with the moving belt and the end-stop switches,
+carrier and cable, `params.yaml` now says **0.16 kg** (was a 0.40 kg guess). Every sim-phase decision re-run:
+
+| Check | 0.40 kg (before) | 0.16 kg (now) |
+|---|---|---|
+| Single swing-up, 20 starts (Pololu, noise, 4.5 A cap) | 20/20 | 20/20, median 2.3 s |
+| Q2 pulley: 30T vs 20T, largest tap survived | 30T +22 % | 3.77 vs 3.03 rad/s: 30T +24 %, every model-error case 10/10 |
+| Q3 rod: 30 cm vs 40 cm (30T) | 30 cm | 30 cm (40 cm uses 315 mm of travel) |
+| Q4 loop rate | 500 Hz | 500 Hz (tap 3.77 rad/s; 1 kHz adds 1 %) |
+| Double swing-up, chosen gentle plan (re-planned) | 50 / 50 / 48 of 50 | **2.09 s; 50 / 50 / 50 of 50** at post-sysid errors ×0.5 / ×1 / ×1.5 |
+| 12 transitions (re-planned), random post-sysid rigs | 11 × 20/20, DU→UU 17/20 | the same: 11 × 20/20, DU→UU 17/20; every one 5/5 nominal |
+
+**Every decision stands; the lighter cart is slightly easier.** Trajectories in `results/trajectories/` are
+re-planned for 0.16 kg (the old ones would be mis-scaled). The tours weren't re-run. Weigh the real parts in
+PLAN 2.2 / BRINGUP stage 0 and replace 0.16.
 
 ## Numbers that are guesses (replace in Phase 4)
 

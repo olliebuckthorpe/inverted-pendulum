@@ -24,7 +24,9 @@ drive:
   belt_damping: 20.0       # N·s/m. guess
 
 cart:
-  mass: 0.40               # kg. guess: printed cart + MGN12H carriage + bearings + sensor board (PLAN 1.2)
+  mass: 0.16               # kg. CAD estimate 145 g (printed ~35 + MGN12H 54 + two 608s ~24 + shaft ~19 + sensor
+                           # board and screws ~13; hardware/cad/LAYOUT.md) + moving belt ~10 + end-stop switches,
+                           # carrier and cable ~5. Was a 0.40 guess until 30 Sep. Weigh the real parts (PLAN 2.2)
   travel: 0.40             # m, each way from centre: 1 m rail minus cart and end blocks (PLAN 1.2)
   coulomb_friction: 1.0    # N. guess (MGN12 clone carriage + belt), separate from the gearbox drag above
   viscous_friction: 0.5    # N·s/m. guess
