@@ -267,6 +267,26 @@ The last three have to be balanced.
   hardware with planned feedforward plus linear feedback, framing it as a transition between equilibria.
   Whether they demonstrated every transition on hardware isn't confirmed here.
 
+## Clone motor check (29 Sep, while ordering, at Ollie's request)
+
+Question: could a ~£12–20 **JGB37-520** gearmotor with Hall encoder replace the Pololu #4757 (~£82 delivered)?
+Modelled from seller figures only (no datasheet): 2.3 A stall at 12 V (so R ≈ 5.2 Ω), 0.15 A no-load,
+Kt = Ke from the no-load speed. Everything else as the datasheet sim (30T, 5 A limiter at 4.5 A for the single,
+sensor noise, slew). Scripts: `clone_motor_single.py`, `clone_motor_double.py`, `clone_motor_replan.py`.
+
+| Motor (output shaft) | Stall torque | Single swing-up (20 starts) | Double, Pololu-planned trajectory (50 rigs) | Double, re-planned for this motor (50 rigs) |
+|---|---|---|---|---|
+| **Pololu #4757**, 1600 rpm | 0.294 N·m | 20/20, median 2.2 s | **50/50** | – |
+| JGB37-520, 1000 rpm | 0.246 N·m | 20/20, median 2.2 s | 1/50 | u ≤ 0.6: **no feasible plan**; u ≤ 0.8: plan found (2.56 s) but **4/50** |
+| JGB37-520, 1600 rpm | 0.154 N·m | 20/20, median 2.3 s | 1/50 | **no feasible plan** at u ≤ 0.6 or 0.8 |
+
+- **The single swing-up needs far less than either motor has**, so a clone would do the single.
+- **The double swing-up does not survive the clone**, even re-planned for its torque: the planner either finds
+  no swing-up inside the rail and duty limits or one that leaves the tracker no authority (4/50).
+- (The kick ladder isn't comparable across motors: a "duty = +1 for D ms" kick is weaker on a weaker motor.)
+- **Decision (Ollie, 29 Sep): Pololu #4757 from TME**, because the double swing-up on hardware is in scope.
+  The clone's figures are unverified seller numbers, which only strengthens that.
+
 ## Numbers that are guesses (replace in Phase 4)
 
 | Parameter | Value used | Why it matters |
