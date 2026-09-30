@@ -1,0 +1,28 @@
+{
+  "realistic": {
+    "episodes": 100,
+    "success": 9,
+    "rate": 0.09
+  },
+  "no_noise": {
+    "episodes": 100,
+    "success": 5,
+    "rate": 0.05
+  },
+  "task": "balance",
+  "variant": "Eb",
+  "env": {
+    "randomise_scale": 0.0,
+    "noise_deg": 0.0,
+    "smooth_hz": 1000.0
+  },
+  "gamma": 0.99,
+  "net": [
+    128,
+    128
+  ],
+  "seed": 1,
+  "steps": 500000,
+  "started_from": null,
+  "train_minutes": 60.2
+}

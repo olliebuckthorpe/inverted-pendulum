@@ -1,0 +1,25 @@
+{
+  "realistic": {
+    "episodes": 100,
+    "success": 0,
+    "rate": 0.0
+  },
+  "no_noise": {
+    "episodes": 100,
+    "success": 0,
+    "rate": 0.0
+  },
+  "task": "balance",
+  "variant": "G",
+  "env": {
+    "noise_deg": 0.0
+  },
+  "gamma": 0.99,
+  "net": [
+    128,
+    128
+  ],
+  "seed": 1,
+  "steps": 500000,
+  "train_minutes": 50.2
+}

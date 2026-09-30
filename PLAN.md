@@ -281,6 +281,9 @@ Choose the numbers from the sim so that neither controller is favoured. **Commit
 - **Double swing-up (Ollie: attempt on hardware, SPEC §3):** already working in simulation from Phase 1 (trajectory optimisation + time-varying LQR + Kalman filter + hand-over; `sim/double_trajopt.py`, `sim/double_control.py`). On hardware: (a) re-plan on the fitted model from 8.3 using the rule "duty ≤ 0.6, cart ±300 mm, joint-2 friction ×1.5" (`sim/plan_variant.py`); (b) implement the Kalman filter + TVLQR on the Pico, with the joint-2 sensor wired across joint 1 by the cable loop from 2.5b (gains precomputed on the Mac, sent via PARAMS); (c) first test the plan's start in slow motion with the tapper arm clear; (d) **Done when:** ≥ 3 of 10 hardware swing-ups end balanced for 10 s, filmed. Any fewer by 1 Nov → report "double balances on hardware; swing-up shown in sim".
 - **Transitions (only after the hardware double swing-up works):** the 12 moves between DD/UU/UD/DU are planned and working in sim (`plan_transition.py`, `double_control.tour`). On hardware: re-plan them on the fitted model, then try the tour DD→UU→UD→DU→DD. Film whatever works.
 - **8.5** Optional, only if 8.4 is done early: a double-balance SAC policy in sim (and on hardware if time allows).
+  **Done early in sim (30 Sep, Ollie's request, with an exploratory AI double swing-up): 97/100 and 100/100 on
+  realistic rigs** at 50 Hz decisions with the Kalman-filtered state (`sim/RESULTS-ai-double.md`). On hardware it
+  still waits behind the classical double balance.
 - **🚦 Sun 1 Nov: stop.** Whatever state it's in becomes "progress + what's next" in the write-up. Film what works.
 
 ---

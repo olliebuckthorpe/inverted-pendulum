@@ -1,0 +1,34 @@
+{
+  "own_setup": {
+    "episodes": 100,
+    "success": 87,
+    "rate": 0.87
+  },
+  "realistic": {
+    "episodes": 100,
+    "success": 8,
+    "rate": 0.08
+  },
+  "no_noise": {
+    "episodes": 100,
+    "success": 87,
+    "rate": 0.87
+  },
+  "task": "balance",
+  "variant": "Eb50",
+  "env": {
+    "randomise_scale": 0.0,
+    "noise_deg": 0.0,
+    "smooth_hz": 1000.0,
+    "policy_hz": 50.0
+  },
+  "gamma": 0.99,
+  "net": [
+    128,
+    128
+  ],
+  "seed": 0,
+  "steps": 300000,
+  "started_from": null,
+  "train_minutes": 20.4
+}
