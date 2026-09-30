@@ -26,6 +26,7 @@ static mutex_t lock;
 struct Shared {
     uint8_t mode = IDLE, requested_mode = IDLE;
     bool reset_request = false;
+    bool hang_request = false;                            // PLAN 3.4 watchdog test (HANG, IDLE only)
     uint32_t last_heartbeat_us = 0;
     float kick_duty = 0; uint32_t kick_until_us = 0;
     ctl::ClassicalParams classical;
@@ -146,6 +147,7 @@ static void handle(uint8_t type, uint8_t seq, const uint8_t* p, size_t n) {
         }
         case 0x06: if (n == 6) { S.kick_duty = rd_f32(p); S.kick_until_us = time_us_32() + rd_u16(p + 4) * 1000u; }
                    else status = 5; break;
+        case 0x07: if (n == 0 && S.mode == IDLE) S.hang_request = true; else status = 7; break;   // HANG (test)
         default: status = 6;
     }
     mutex_exit(&lock);
@@ -231,7 +233,9 @@ void loop1() {
     float kick = S.kick_duty;
     uint32_t S_kick_until = S.kick_until_us;
     int sid_type = S.sysid_type; float sa = S.sysid_amp, sf0 = S.sysid_f0, sf1 = S.sysid_f1, sT = S.sysid_s;
+    bool hang = S.hang_request;
     mutex_exit(&lock);
+    if (hang) while (true) {}                                           // stop feeding the watchdog: reset in 50 ms
 
     // ---- sense ----
     float x = float(quadrature_encoder_get_count(enc_pio, enc_sm)) * xpc;
@@ -272,6 +276,9 @@ void loop1() {
     if (exec > PERIOD_US) safety.faults |= ctl::F_OVERRUN;
     mutex_enter_blocking(&lock);
     S.t_us = t0; S.x = s.x; S.xd = s.xd; S.th = s.th; S.thd = s.thd; S.duty = out; S.mode = mode;
-    S.faults = safety.faults; S.exec_us = exec; S.jitter_us = jitter; ++S.tel_seq;
+    // bits 0-8: latched faults (Safety); bits 12-15: LIVE input levels for bench bring-up and diagnosis, reported
+    // in every mode incl. IDLE (never read by Safety): 12 P12 (E-stop released), 13 N1, 14 N2, 15 angle read OK
+    S.faults = safety.faults | (p12 << 12) | (n1 << 13) | (n2 << 14) | (sensor_ok << 15);
+    S.exec_us = exec; S.jitter_us = jitter; ++S.tel_seq;
     mutex_exit(&lock);
 }

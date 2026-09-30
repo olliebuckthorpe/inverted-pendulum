@@ -137,6 +137,7 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 - Arduino IDE (or PlatformIO in VS Code) + the **arduino-pico core** (earlephilhower), board "Raspberry Pi Pico 2".
 - **Done when:** a blink sketch runs on the Pico 2.
 - **Progress 25 Sep:** arduino-cli 1.5.1 + arduino-pico 6.1.1 installed; the full firmware (`firmware/pendulum`, built by `firmware/build.sh`) compiles for the Pico 2 with no warnings (65 kB flash, 53.5 kB RAM). Still to do on the hardware: blink.
+- **30 Sep:** the ordered board is a Pico 2 W, whose LED is on the wireless chip: the blink is `firmware/bringup/blink_w` (built for `rpipico2w`; compiles). The whole bench sequence from here to the 3.4 checklist is `hardware/BRINGUP.md`, with a Mac command per check (`sim/bringup.py`) and `hardware/safety-checklist.md`.
 
 **2.4 AS5047P over SPI.**
 - Read the 14-bit angle (with the parity/error-flag check) at 1 kHz and print it over USB.

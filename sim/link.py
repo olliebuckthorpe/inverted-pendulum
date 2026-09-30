@@ -7,10 +7,25 @@ import time
 
 from cobs import cobs
 
-HEARTBEAT, PING, SET_MODE, PARAM, WEIGHTS, KICK = 0x01, 0x02, 0x03, 0x04, 0x05, 0x06
+HEARTBEAT, PING, SET_MODE, PARAM, WEIGHTS, KICK, HANG = 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07
 TELEMETRY, PONG, ACK, TEXT = 0x81, 0x82, 0x83, 0x84
 MODES = {"IDLE": 0, "CLASSICAL": 1, "AI": 2, "LQR_ONLY": 3, "SYSID": 4, "KICK": 5}
 TELEMETRY_FMT = "<I5fBHHH"     # t_us, x, x_dot, th, th_dot, duty, mode, faults, exec_us, jitter_us
+FAULT_NAMES = ("heartbeat lost", "soft limit", "fell", "end-stop / relay dropped", "E-stop", "sensor error",
+               "loop overrun", "rod-1 turn limit", "weights invalid")          # bits 0-8 (latched)
+LIVE_NAMES = ("E-stop released (P12)", "left end-stop closed (N1)", "right end-stop closed (N2)",
+              "angle read OK")                                                  # bits 12-15 (live levels)
+
+
+def decode_faults(v: int) -> tuple[list[str], dict[str, bool]]:
+    """Split TELEMETRY `faults` into (latched fault names, live input levels). firmware/PROTOCOL.md."""
+    return ([n for i, n in enumerate(FAULT_NAMES) if v >> i & 1],
+            {n: bool(v >> (12 + i) & 1) for i, n in enumerate(LIVE_NAMES)})
+
+
+def unpack_telemetry(payload: bytes) -> dict:
+    keys = ("t_us", "x", "x_dot", "th", "th_dot", "duty", "mode", "faults", "exec_us", "jitter_us")
+    return dict(zip(keys, struct.unpack(TELEMETRY_FMT, payload)))
 
 
 def crc16(data: bytes) -> int:
