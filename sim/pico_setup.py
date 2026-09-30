@@ -6,6 +6,7 @@ controllers, then both policies' weights. Nothing is hand-copied, so the Pico ru
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import struct
 import sys
@@ -18,6 +19,15 @@ import swingup
 
 CTRL_HZ = 500.0
 SWING, BALANCE = "swingupE_seed3", "balanceGc_seed4"      # chosen by select_ai.py (96% hold-out)
+CALIBRATION = model.SIM_DIR.parent / "hardware" / "rig-calibration.json"
+
+
+def theta_zero() -> float:
+    """The AS5047P reading (rad) with rod 1 straight up, saved by `bringup.py calibrate` (0.0 until then)."""
+    try:
+        return float(json.loads(CALIBRATION.read_text())["theta_zero_rad"])
+    except FileNotFoundError:
+        return 0.0
 
 
 def param_messages(p: dict, theta_zero: float = 0.0) -> list[tuple[int, float]]:
@@ -50,12 +60,14 @@ def weight_floats(tag: str) -> list[float]:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("port")
-    ap.add_argument("--theta-zero", type=float, default=0.0, help="AS5047P reading (rad) with the rod straight up")
+    ap.add_argument("--theta-zero", type=float, default=None,
+                    help="AS5047P reading (rad) with the rod straight up (default: hardware/rig-calibration.json)")
     a = ap.parse_args()
     p = model.with_params(model.load_params(), supply__current_cap=4.5)
     L = link.Link(a.port)
     L.send(link.SET_MODE, bytes([link.MODES["IDLE"]]))
-    msgs = [(link.PARAM, struct.pack("<Hf", i, float(v))) for i, v in param_messages(p, a.theta_zero)]
+    th0 = theta_zero() if a.theta_zero is None else a.theta_zero
+    msgs = [(link.PARAM, struct.pack("<Hf", i, float(v))) for i, v in param_messages(p, th0)]
     msgs += [(link.WEIGHTS, m) for net, tag in ((0, SWING), (1, BALANCE)) for m in link.weights_messages(weight_floats(tag), net)]
     bad = 0
     for ptype, payload in msgs:

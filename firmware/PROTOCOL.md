@@ -19,6 +19,7 @@ All multi-byte fields are little-endian; floats are IEEE-754 float32. `seq` coun
 | 0x04 | PARAM | Mac → Pico | u16 id, f32 value (one parameter; ids in `core/params.h`) |
 | 0x05 | WEIGHTS | Mac → Pico | u8 net (0 swing-up, 1 balance), u16 first float index, u8 n (≤ 48), f32 × n |
 | 0x06 | KICK | Mac → Pico | f32 duty, u16 duration_ms: a cart jolt that **overrides** the controller's duty for that long (SPEC §12) |
+| 0x07 | HANG | Mac → Pico | (empty) **Test only, accepted in IDLE:** the control loop stops feeding the hardware watchdog, so the Pico must reset within 50 ms and boot with the motor braked (PLAN 3.4). ACK status 7 if refused |
 | 0x81 | TELEMETRY | Pico → Mac | u32 t_us, f32 x, x_dot, th, th_dot, duty, u8 mode, u16 faults, u16 loop_exec_us, u16 loop_jitter_us |
 | 0x82 | PONG | Pico → Mac | the PING payload echoed, + u32 pico_us |
 | 0x83 | ACK | Pico → Mac | u8 type, u8 seq, u8 status (0 ok, else an error code) |
@@ -26,3 +27,7 @@ All multi-byte fields are little-endian; floats are IEEE-754 float32. `seq` coun
 
 Fault bits (TELEMETRY `faults`): 0 heartbeat lost, 1 soft limit, 2 fell, 3 end-stop / relay dropped,
 4 E-stop, 5 sensor error (AS5047P parity/error flag), 6 loop overrun, 7 rod-1 turn limit (double), 8 weights invalid.
+These are latched until the next SET_MODE. Bits 12–15 are NOT faults but the **live** input levels, sent in every
+mode including IDLE (for bench bring-up): 12 P12 high (E-stop released), 13 N1 high (left end-stop closed),
+14 N2 high (right end-stop closed), 15 the last AS5047P read passed its parity and error-flag checks.
+`link.decode_faults()` splits the two.
