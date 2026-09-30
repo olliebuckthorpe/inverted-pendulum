@@ -200,6 +200,8 @@ These run alongside Phase 1 as parts land. **No motor power until Phase 3's safe
 
 **Fallback:** if the fit is poor after two attempts → add the missing term the residuals point to (usually friction or delay), rather than re-running the same fit.
 
+**Ready before the rig (30 Sep): `sim/sysid.py`.** `record PORT all` plays the five cart tests (steps at 25/50/75 %, a 0.5–20 Hz chirp, a slow triangle; sized in the sim to stay within ~±100 mm), `swing PORT --deg 30` / `--deg 90` records free swings, `fit --write` fits and updates `params.yaml`, `validate` draws the overlays and applies the 4.3 checks. `rehearse` runs the whole pipeline on synthetic recordings of a deliberately different rig. Before recording: **weigh the cart, rod and hub, measure the rod length, and measure the motor's winding resistance with a multimeter** (the recordings can't separate Kt, R and the moving mass; they pin the per-kg ratios, which the report gives). Gearbox play isn't identifiable with the motor encoder as the only cart sensor; it keeps its prior and randomisation range.
+
 ---
 
 ## Phase 5 — Classical on hardware + AI training: Thu 8 – Sun 11 Oct

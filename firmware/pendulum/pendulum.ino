@@ -76,12 +76,6 @@ static void motor_out(float duty) {
 }
 
 // ---- system identification: open-loop duty sequences played by the Pico (PLAN 4.1) ----
-static float sysid_duty(int type, float amp, float f0, float f1, float T, float t) {
-    if (t >= T) return 0.0f;
-    if (type == 0) return (fmodf(t, 2.0f) < 1.0f) ? amp : -amp;                           // ±amp steps, 1 s each
-    if (type == 1) { float k = (f1 - f0) / T; return amp * sinf(2.0f * float(M_PI) * (f0 * t + 0.5f * k * t * t)); }  // chirp
-    float ph = fmodf(t * f0, 1.0f); return amp * (ph < 0.5f ? 4 * ph - 1 : 3 - 4 * ph);    // triangle
-}
 
 // =========================================================================================================
 // core 0: USB link
@@ -257,7 +251,7 @@ void loop1() {
                                                         duty = ai.step(s); balancing = ai.mode == ctl::BALANCE; }
             else safety.faults |= ctl::F_WEIGHTS;
             break;
-        case SYSID: duty = sysid_duty(sid_type, sa, sf0, sf1, sT, (t0 - mode_start_us) * 1e-6f); break;
+        case SYSID: duty = ctl::sysid_duty(sid_type, sa, sf0, sf1, sT, (t0 - mode_start_us) * 1e-6f); break;
         case KICK:  duty = int32_t(S_kick_until - t0) > 0 ? kick : 0.0f; break;
         default: duty = 0;
     }
