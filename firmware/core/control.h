@@ -113,6 +113,18 @@ struct AiController {
 };
 
 // ---------------------------------------------------------------------------------------------------------
+// System-ID excitation (SYSID mode, PLAN 4.1), mirrored by sim/sysid.py excitation() (parity-tested).
+//   type 0: ±amp steps, each 1/f0 s long (f0 <= 0: 1 s), the first one half-length; type 1: chirp f0 -> f1 Hz over T;
+//   type 2: triangle between -amp and +amp at f0 Hz. Zero after T seconds.
+inline float sysid_duty(int type, float amp, float f0, float f1, float T, float t) {
+    if (t >= T) return 0.0f;
+    if (type == 0) { float per = f0 > 0 ? 1.0f / f0 : 1.0f;                    // first step half-length, so the
+                     return (fmodf(t + 0.5f * per, 2.0f * per) < per) ? amp : -amp; }  // cart moves about its start
+    if (type == 1) { float k = (f1 - f0) / T; return amp * sinf(2.0f * float(M_PI) * (f0 * t + 0.5f * k * t * t)); }
+    float ph = fmodf(t * f0, 1.0f); return amp * (ph < 0.5f ? 4 * ph - 1 : 3 - 4 * ph);
+}
+
+// ---------------------------------------------------------------------------------------------------------
 // Safety (on the Pico, never the Mac). Returns the duty actually allowed and sets fault bits.
 enum Fault : uint16_t { F_HEARTBEAT = 1 << 0, F_SOFT_LIMIT = 1 << 1, F_FELL = 1 << 2, F_ENDSTOP = 1 << 3,
                         F_ESTOP = 1 << 4, F_SENSOR = 1 << 5, F_OVERRUN = 1 << 6, F_TURNS = 1 << 7, F_WEIGHTS = 1 << 8 };
