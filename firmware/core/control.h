@@ -137,7 +137,7 @@ struct Safety {
         // speed-aware soft limit: would the cart pass x_soft even braking hard from here?
         float stop_at = s.x + signf(s.xd) * s.xd * s.xd / (2.0f * p.a_brake);
         if (fabsf(s.x) > p.x_soft || fabsf(stop_at) > p.x_soft) faults |= F_SOFT_LIMIT;
-        float out = faults ? 0.0f : clampf(duty, -p.duty_max, p.duty_max);   // duty 0 on the MD13S = motor braked
+        float out = faults ? 0.0f : clampf(duty, -p.duty_max, p.duty_max);   // duty 0 on the MDD10A = motor braked
         out = faults ? 0.0f : clampf(out, last - p.slew_per_cycle, last + p.slew_per_cycle);
         last = out;
         return out;

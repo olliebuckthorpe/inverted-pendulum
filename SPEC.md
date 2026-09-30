@@ -94,6 +94,11 @@ hardware FPU.
 Prices were checked 2026-09-24. ✅ = confirmed on the seller's page; ⚠️ = search snippet or unconfirmed, so
 **re-check at checkout**. **Order everything except the motor now; order the motor after the sim phase (§11).**
 
+**Ordered 28–29 Sep 2026.** What was actually bought (sellers, part numbers, prices) is in `hardware/orders.md`.
+Four parts were substituted at checkout, each for stock or price, with the evidence there and in
+`hardware/electronics.md`: the **MDD10A** driver (row 8), the **Pico 2 W** (row 6), the **1N4001** (15b) and the
+**1.5KE20A** (15e). Rows 13 (rod) and the frame (plywood, clamps, wood screws) are bought in person when needed.
+
 | # | Part | Spec to match | Qty | Seller (UK) | Price | Buy |
 |---|---|---|---|---|---|---|
 | 1 | Linear rail | **MGN12, 1000 mm, with 1× MGN12H carriage** (clone OK) | 1 | eBay UK, CNC-Planet | ⚠️ £11.95 base; **1000 mm price unconfirmed** (~£12–20) | Now |
@@ -101,9 +106,9 @@ Prices were checked 2026-09-24. ✅ = confirmed on the seller's page; ⚠️ = s
 | 3 | Drive pulley | GT2 **20T, 6 mm bore**, 6 mm belt | 1 | Gears & Sprockets | ✅ £1.78 | Now |
 | 4 | Drive pulley | GT2 **30T, 6 mm bore**, 6 mm belt | 1 | Gears & Sprockets | ✅ £2.63 | Now |
 | 5 | Idler | GT2 20T idler, 5 mm bore (or bearings for a printed idler) | 1 | Technobots | ⚠️ ~£2.02 | Now |
-| 6 | Controller | **Raspberry Pi Pico 2 H** (with headers) | 1 | The Pi Hut | ✅ £5.80 | Now |
+| 6 | Controller | **Raspberry Pi Pico 2 H** (with headers). *Ordered: Pico 2 W with headers, run as a Pico 2 (radio off)* | 1 | The Pi Hut | ✅ £5.80 | Now |
 | 7 | Angle sensor | **ams-OSRAM AS5047P-TS_EK_AB** adapter kit (14-bit SPI; **includes a 6×2.5 mm diametric magnet**) | 1 now, +1 for the double | Farnell / RS / Mouser UK | ⚠️ ~£13–17 (Digi-Key $16.66) | Now (2nd later) |
-| 8 | Motor driver | **Cytron MD13S** (6–30 V, 13 A, 3.3 V logic OK) | 1 | Active Robots (or RobotBits) | ⚠️ ~£15 (VAT status unclear) | Now |
+| 8 | Motor driver | **Cytron MD13S** (6–30 V, 13 A, 3.3 V logic OK). *Ordered: Cytron MDD10A (5–30 V, 10 A per channel, same PWM/DIR interface and truth table), channel 1 only* | 1 | Active Robots (or RobotBits) | ⚠️ ~£15 (VAT status unclear) | Now |
 | 9 | Power supply | **Mean Well GST60A12-P1J**, 12 V 5 A, enclosed (**or a larger 12 V unit if the sim says so**, see §8) | 1 | **RS UK** (sold out at The Pi Hut) | ✅ £25.91 inc VAT | **With the motor, after the sim phase** |
 | 10 | Barrel jack adapter | 2.1 mm DC jack → screw terminals | 1 | Pi Hut / Amazon | ⚠️ ~£2–3 | Now |
 | 11 | Bearings | 608ZZ (8 mm bore), pack of 10 | 1 pack | Amazon UK | ✅ £5.58 | Now |
@@ -112,10 +117,10 @@ Prices were checked 2026-09-24. ✅ = confirmed on the seller's page; ⚠️ = s
 | 14 | E-stop | Latching mushroom switch, ≥10 A DC | 1 | Amazon UK | ⚠️ ~£8.49–9.99 | Now |
 | 15 | End-stops | Micro limit switch, roller lever, pack of 10 (**signal/relay-coil duty only**, see §8) | 1 pack | Amazon UK | ✅ £6.99 | Now |
 | 15a | Brake relay | **12 V automotive CHANGEOVER relay, 5-pin (30 / 87 / 87a), 30–40 A contacts**, with socket/pigtail. In the motor lead: drops → shorts the motor (hardware/electronics.md) | 1 | Amazon UK / car-parts shop | ⚠️ ~£4–6 | Now |
-| 15b | Flyback diode | 1N4007 (across the relay coil) | 1 pack | Amazon UK | ⚠️ ~£1–2 | Now (skip if owned) |
+| 15b | Flyback diode | 1N4007 (across the relay coil). *Ordered: 1N4001, the 50 V grade of the same diode* | 1 pack | Amazon UK | ⚠️ ~£1–2 | Now (skip if owned) |
 | 15c | Schottky diode | ≥ 8 A, ≥ 40 V (e.g. MBR1045, TO-220): stops braking energy reaching the PSU (hardware/electronics.md) | 1 | Any UK electronics seller | ⚠️ ~£1 | Now |
 | 15d | Bulk capacitor | 2200 µF 35 V low-ESR electrolytic, at the driver | 1 | Any UK electronics seller | ⚠️ ~£1–2 | Now |
-| 15e | TVS diode | ~21–23 V breakdown, unidirectional (e.g. 1.5KE22A) | 1 | Any UK electronics seller | ⚠️ ~£0.50 | Now |
+| 15e | TVS diode | ~21–23 V breakdown, unidirectional (e.g. 1.5KE22A). *Ordered: 1.5KE20A (17.1 V stand-off, 19.0–21.0 V breakdown: the 17.8 V sim peak sits between them, so at most a little leakage during a braking burst; see hardware/electronics.md)* | 1 | Any UK electronics seller | ⚠️ ~£0.50 | Now |
 | 15f | Resistors | 10 kΩ ×5, 3.3 kΩ ×3, 1 kΩ ×2 (pull-downs, end-stop dividers, encoder series) | – | Any UK electronics seller | ⚠️ ~£1–5 | Now (skip if a kit is owned) |
 | 16 | Fuse | Inline blade fuse holders + mixed fuses (use **7.5 A**) | 1 kit | Amazon UK | ✅ £7.99 | Now |
 | 17 | Wiring | 18 AWG silicone red/black; Dupont jumpers; small breadboard | – | Amazon UK | ✅ £6.74 / ✅ £6.99 / ⚠️ ~£7.99 | Now (skip anything already owned) |
@@ -189,11 +194,11 @@ Do **not** save money on the rail, motor or sensor. Those are where precision de
 ## 8. Electronics and safety wiring
 
 - **Power path (revised 2026-09-25; full diagram in hardware/electronics.md):** PSU (12 V) → **7.5 A fuse**
-  → **latching E-stop** → **Schottky diode** → bus with a **2200 µF capacitor + TVS clamp** → Cytron MD13S.
+  → **latching E-stop** → **Schottky diode** → bus with a **2200 µF capacitor + TVS clamp** → Cytron MDD10A (ordered in place of the MD13S).
   The diode stops braking energy reaching the PSU, whose over-voltage protection (12.6–16.2 V) latches off
   until re-powered.
 - **Brake relay in the motor lead (revised 2026-09-25):** a 5-pin changeover automotive relay connects the
-  motor to the MD13S when energised and **shorts the motor when it drops**. The sim shows cutting power lets
+  motor to the driver when energised and **shorts the motor when it drops**. The sim shows cutting power lets
   the cart coast 720–840 mm from top speed (into the rail end); shorting the motor stops it in ~110 mm.
 - **Relay coil loop:** 12 V after the E-stop → **end-stop switches (normally closed, in series)** → relay coil
   → ground, with a **flyback diode across the coil**. The E-stop, either end-stop, or a power failure drops
@@ -206,10 +211,13 @@ Do **not** save money on the rail, motor or sensor. Those are where precision de
   optocoupler) is decided in plan step 2.1.
 - **Cytron MD13S (verified in PLAN 2.1 from the user manual v1.1):** logic HIGH is 3.0–5.5 V, so the Pico's
   3.3 V works with 0.3 V of margin; PWM is up to 20 kHz; its built-in current limit is 30 A, far above our
-  motor, so it gives no protection at our currents.
+  motor, so it gives no protection at our currents. **The MDD10A ordered instead (manual v1.1, May 2015)** has
+  the same logic levels, 20 kHz limit and truth table (PWM LOW → both outputs LOW), 10 A continuous / 30 A peak
+  per channel, 5–30 V on Rev 2.0 (check the board is marked REV2.0; Rev 1.0 was 25 V), and no stated current
+  limit, which changes nothing here for the same reason.
 - **Braking energy (decided 2026-09-25):** diode + 2200 µF + TVS, sized from the sim (worst burst ~0.16 J;
-  bus peaks ≈ 17.8 V, under the MD13S's 30 V). The Pico's PWM and DIR pins get 10 kΩ pull-downs so the motor
-  is braked (MD13S: PWM LOW = outputs LOW) while the Pico boots or is unplugged. Logic level: direct
+  bus peaks ≈ 17.8 V, under the driver's 30 V). The Pico's PWM and DIR pins get 10 kΩ pull-downs so the motor
+  is braked (MD13S and MDD10A: PWM LOW = outputs LOW) while the Pico boots or is unplugged. Logic level: direct
   connection, measured ≥ 3.0 V before any motor power (the RP2350 guarantees only 2.62 V HIGH).
 
 ## 9. Firmware (Pico 2, Arduino-style C++ on the arduino-pico core)

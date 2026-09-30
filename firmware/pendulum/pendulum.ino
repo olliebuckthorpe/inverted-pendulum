@@ -67,7 +67,7 @@ static bool read_angle(float& rad) {
     return true;
 }
 
-// ---- motor (MD13S sign-magnitude: PWM LOW = both outputs LOW = braked) ----
+// ---- motor (MDD10A channel 1, sign-magnitude: PWM LOW = both outputs LOW = braked; same as the MD13S) ----
 static void motor_out(float duty) {
     duty = ctl::clampf(duty, -1.0f, 1.0f);
     digitalWrite(PIN_DIR, duty < 0 ? HIGH : LOW);
