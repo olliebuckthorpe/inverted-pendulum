@@ -1,0 +1,33 @@
+{
+  "own_setup": {
+    "episodes": 100,
+    "success": 100,
+    "rate": 1.0
+  },
+  "realistic": {
+    "episodes": 100,
+    "success": 100,
+    "rate": 1.0
+  },
+  "no_noise": {
+    "episodes": 100,
+    "success": 100,
+    "rate": 1.0
+  },
+  "task": "balance",
+  "variant": "G50k",
+  "env": {
+    "noise_deg": 0.0,
+    "policy_hz": 50.0,
+    "estimator": "kf"
+  },
+  "gamma": 0.99,
+  "net": [
+    128,
+    128
+  ],
+  "seed": 2,
+  "steps": 600000,
+  "started_from": null,
+  "train_minutes": 54.8
+}

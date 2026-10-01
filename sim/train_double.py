@@ -21,7 +21,7 @@ import time
 
 import torch
 from stable_baselines3 import SAC
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import BaseCallback, CallbackList, CheckpointCallback
 from stable_baselines3.common.monitor import Monitor
 
 import model
@@ -45,11 +45,50 @@ VARIANTS = {
     # ... seeing the Kalman-filtered state, as the classical double does (LQR through it: 20/20 at 50 Hz with
     # noise on random rigs, vs 0/20 with differencing)
     "G50k": ({"noise_deg": 0.0, "policy_hz": 50.0, "estimator": "kf"}, 0.99, [128, 128]),
+    # hand-over pair (the single's route, 30 Sep): balance practises the messier states a swing-up hands over in;
+    # swing-up is rewarded for REACHING the catch zone (both rods within 15°, < 3 rad/s), then balance takes over.
+    # The height-only swing-up plateaued at ~half the possible reward, two of three seeds sliding back.
+    "G50kc": ({"noise_deg": 0.0, "policy_hz": 50.0, "estimator": "kf", "start": "catch"}, 0.99, [128, 128]),
+    "Ec": ({"randomise_scale": 0.0, "noise_deg": 0.0, "policy_hz": 50.0, "reward": "catch"}, 0.995, [256, 256]),
+    "Gc": ({"noise_deg": 0.0, "policy_hz": 50.0, "reward": "catch"}, 0.995, [256, 256]),
+    "Ecv": ({"randomise_scale": 0.0, "noise_deg": 0.0, "policy_hz": 50.0, "reward": "catchV"}, 0.995, [256, 256]),
+    # 1 Oct, Ollie: one last principled try. Reverse curriculum: start just below the catch zone along the classical
+    # plan's path, move the start back towards hanging whenever >= 60 % of recent episodes reach the zone
+    "Er": ({"randomise_scale": 0.0, "noise_deg": 0.0, "policy_hz": 50.0, "reward": "catchV", "start": "reverse"},
+           0.995, [256, 256]),
+    "Gr": ({"noise_deg": 0.0, "policy_hz": 50.0, "reward": "catchV", "start": "reverse"}, 0.995, [256, 256]),
     # swing-up feasibility first: one fixed rig, no noise (can SAC learn a double swing-up at all?)
     "E": ({"randomise_scale": 0.0, "noise_deg": 0.0, "policy_hz": 100.0}, 0.995, [256, 256]),
     # then the randomised rig (no noise while learning); 100 Hz decisions + gamma 0.995 ≈ a 2 s look-ahead
     "Gs": ({"noise_deg": 0.0, "policy_hz": 100.0}, 0.995, [256, 256]),
 }
+
+
+class ReverseCurriculum(BaseCallback):
+    """Move the start back towards hanging (level 0 -> 1) whenever >= 60 % of the last 100 episodes reached the
+    catch zone; log the level so the training curve can be read against it."""
+
+    def __init__(self, log_path, step: float = 0.05, need: float = 0.6):
+        super().__init__()
+        self.log_path, self.step_size, self.need = log_path, step, need
+        self.recent = []
+
+    def _on_training_start(self):
+        self.training_env.envs[0].unwrapped.level = 0.0
+
+    def _on_step(self) -> bool:
+        for done, info in zip(self.locals["dones"], self.locals["infos"]):
+            if done:
+                self.recent.append(bool(info.get("caught")))
+        env = self.training_env.envs[0].unwrapped
+        if len(self.recent) >= 100:
+            rate = sum(self.recent[-100:]) / 100
+            if rate >= self.need and env.level < 1.0:
+                env.level = min(1.0, env.level + self.step_size)
+                with open(self.log_path, "a") as f:
+                    f.write(f"{self.num_timesteps} {env.level:.2f} {rate:.2f}\n")
+                self.recent = []
+        return True
 
 
 def evaluate(policy, task: str, env_kw: dict, n: int = 100, seed0: int = 20_000) -> dict:
@@ -62,7 +101,12 @@ def evaluate(policy, task: str, env_kw: dict, n: int = 100, seed0: int = 20_000)
             action, _ = policy.predict(obs, deterministic=True)
             obs, _, terminated, truncated, info = env.step(action)
             done = terminated or truncated
-        ok += (not terminated) if task == "balance" else ((not terminated) and info["upright_s"] >= 2.0)
+        if task == "balance":
+            ok += not terminated
+        elif env.reward_mode in ("catch", "catchV"):
+            ok += info["caught"]                     # reached the hand-over zone
+        else:
+            ok += (not terminated) and info["upright_s"] >= 2.0
     return {"episodes": n, "success": ok, "rate": ok / n}
 
 
@@ -82,11 +126,14 @@ if __name__ == "__main__":
     snaps = CheckpointCallback(save_freq=max(steps // 30, 1000), save_path=str(CKPT / f"{tag}_snapshots"),
                                name_prefix=tag)
     t0 = time.time()
-    agent.learn(total_timesteps=steps, callback=snaps)
+    cb = snaps
+    if env_kw.get("start") == "reverse":
+        cb = CallbackList([snaps, ReverseCurriculum(OUT / f"{tag}.levels")])
+    agent.learn(total_timesteps=steps, callback=cb)
     minutes = (time.time() - t0) / 60
     agent.save(CKPT / tag)
     # the decision rate carries over (it changes what the policy sees); everything else is the realistic rig
-    keep = {k: v for k, v in env_kw.items() if k in ("policy_hz", "estimator")}   # part of the controller
+    keep = {k: v for k, v in env_kw.items() if k in ("policy_hz", "estimator", "start", "reward")}  # the job, not the rig
     result = {"own_setup": evaluate(agent, task, env_kw),                     # what it trained on: did it learn?
               "realistic": evaluate(agent, task, keep),                        # random physics + sensor noise
               "no_noise": evaluate(agent, task, {**keep, "noise_deg": 0.0})}    # random physics, clean sensors

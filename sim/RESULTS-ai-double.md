@@ -22,9 +22,41 @@ physics + the AS5047P's datasheet noise (0.068° RMS). Cart 0.16 kg (see RESULTS
 classical double needs it anyway) and a 9→128→128→1 network every 20 ms (~17k multiply-adds, well inside
 the budget). Not yet exported or measured on the Pico (PLAN 6.1's method applies).
 
-## Double swing-up (exploratory): in progress
+## Double swing-up (exploratory): works on 68 % of realistic rigs, but not robust
 
-Variant E (one fixed rig, no noise, 100 Hz, γ 0.995, 256×256 network), 3 seeds × 3M steps. The first attempt's
-reward was a trap: the tip height ran −1..1, so every hanging step cost −1 and driving off the rail (−50) was
-the best policy (every episode ended in ~37 steps). Rescaled to 0..1, the episodes last the full 12 s and the
-reward is still rising at 1.5M steps. Results will be added here.
+**Result (1 Oct):** swing-up policy → hand-over → balance policy (`double_handover.py`), starting from
+hanging on realistic rigs it never trained on: **34/50 swung up and held** with the best snapshot
+(`double_swingupEr_seed0`, 666k steps) and the catch-trained balance policy (`double_balanceG50kc_seed0`).
+**But it fails every time on the nominal rig (0/30 with or without noise) and manages 8/30 on random rigs
+without noise**: it gets near the catch zone and circles just outside it, and rig variation or sensor noise
+is what tips it in. A real rig is one fixed rig, so on hardware it could land anywhere from 0 % to high.
+**Verdict: an AI double swing-up exists in sim, but it isn't a dependable controller.** The classical swing-up
+(50/50 random rigs) stays the hardware plan.
+
+### How it got there (every score from hanging, on rigs never trained on)
+
+| Attempt | Reward / setup | Result | Lesson |
+|---|---|---|---|
+| E, 3 seeds × 3M | tip height (−1..1) | every episode ended in ~37 steps | a −1-per-hanging-step reward made driving off the rail the best policy |
+| E, 3 seeds × 3M | tip height rescaled to 0..1 | **0/100** (realistic), 0/20 on its own rig | it learned to **spin the rods** (4–8 net turns of rod 1 per episode, up 37 % of the time, never held > 1.5 s). Also illegal on the rig: the joint-2 cable allows ±1 turn, so the env now ends the episode there |
+| – | the hand-over zone | a box (15°/3 rad/s per rod) was catchable 20–30 % (even 5°/1 rad/s only ~65 %) | the double's catchable states depend on how the rods move **together**: the zone is now the balance LQR's cost-to-go V = s'Ss < 250 (95 % caught on 400 random states; LQR from inside it 20/20) |
+| Ec, 2 seeds × 1.5M | +100 for reaching the zone, then hand over | 4/100 and 0/100 on its own rig | the zone is a thin target; arrival-only reward gives no signal of how close it came |
+| Ecv, 2 seeds × 1.5M | + a smooth bonus as V falls | 28/100 and 0/100 own rig; 9 and 12 realistic | some signal, not enough |
+| Gc, 2 seeds × 2M | zone reward, random rigs | 0/4 own; 2 and 21 realistic | – |
+| **Er/Gr, 4 runs × 4M** | **reverse curriculum** (Salimans & Chen 2018): start along the classical plan's path just below the zone, move the start back towards hanging whenever ≥ 60 % reach the zone (only the plan's **states**, never its actions) | best run reached 95 % of the way back by 613k steps (99 % success at 90 %), then stalled; others reached 10–65 % | ✅ the only approach that swings up from hanging |
+
+**Keep the best snapshot, not the last:** the best run's full-sequence score fell after its peak (533k 30/50,
+666k **34/50**, 800k 32/50, 2M 21/50, final 4M 18/50); the single's training showed the same slide.
+
+### Balance policies used by the hand-over
+
+| Policy | Starts from | Own setup | Realistic rigs |
+|---|---|---|---|
+| G50k (3 seeds) | near upright | 98, 100, 100 | 97, 100, **100** |
+| G50kc (2 seeds) | anywhere in the catch zone | 97, 94 | **98**, 94 |
+
+### If this were taken further (not planned)
+
+Fine-tune the 666k snapshot from hanging on randomised rigs with noise and a penalty for time spent near but
+outside the zone, and select on a separate set of validation rigs including the nominal one. Not worth it
+before the classical double works on hardware (SPEC §3 order).

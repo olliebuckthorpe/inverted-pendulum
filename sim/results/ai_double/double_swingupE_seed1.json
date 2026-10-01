@@ -1,0 +1,27 @@
+{
+  "realistic": {
+    "episodes": 100,
+    "success": 0,
+    "rate": 0.0
+  },
+  "no_noise": {
+    "episodes": 100,
+    "success": 0,
+    "rate": 0.0
+  },
+  "task": "swingup",
+  "variant": "E",
+  "env": {
+    "randomise_scale": 0.0,
+    "noise_deg": 0.0,
+    "policy_hz": 100.0
+  },
+  "gamma": 0.995,
+  "net": [
+    256,
+    256
+  ],
+  "seed": 1,
+  "steps": 3000000,
+  "train_minutes": 427.1
+}
