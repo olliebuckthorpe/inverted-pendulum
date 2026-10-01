@@ -1,6 +1,6 @@
 # Orders (PLAN 0.1)
 
-Placed Mon 28 – Tue 29 Sep 2026 by Ollie. Prices include VAT unless marked "ex VAT". Add order numbers and
+Placed Mon 28 Sep – Thu 1 Oct 2026 by Ollie. Prices include VAT unless marked "ex VAT". Add order numbers and
 delivery dates from the confirmation emails as they arrive.
 
 ## 1. TME — motor (£81.64 incl. £9.90 + VAT shipping)
@@ -12,20 +12,27 @@ delivery dates from the confirmation emails as they arrive.
 No cheaper genuine source on 29 Sep (Pololu direct $60.95 + shipping + import VAT; Opencircuit €68 ex VAT +
 shipping). A JGB37-520 clone was simulated and rejected: see `sim/RESULTS-sim-phase.md` §"Clone motor check".
 
-## 2. RS UK — power, sensors, small electronics (£76.94, free delivery over £60 ex VAT)
+## 2. DigiKey UK — power, sensors, small electronics (≈ £78.40 incl. VAT, free delivery over £65 ex VAT)
 
-| Part | As ordered | RS stock no. | Qty | Price ex VAT |
-|---|---|---|---|---|
-| PSU (SPEC 9) | Mean Well GST60A12-P1J, 12 V 5 A | – | 1 | – |
-| Angle sensor (SPEC 7) | ams-OSRAM AS5047P-TS_EK_AB adapter kit | – | **2** (2nd is joint 2 for the double; bought now to clear free delivery) | – |
-| Schottky (15c) | onsemi MBR1045G, 45 V 10 A, TO-220AC | 545-2872 | 5 | £3.18 |
-| Capacitor (15d) | Panasonic EEUFR1V222L, 2200 µF 35 V, FR low-ESR, 105 °C | 739-6831 | 2 | £3.58 |
-| TVS (15e) | Vishay 1.5KE20A-E3/54 (1.5KE22A was unavailable) | 902-6398 | 10 | £4.44 |
-| Flyback (15b) | Vishay 1N4001-E3/54 (1N4007 only in packs of 100) | 628-8931 | 10 | £0.72 |
-| Resistors (15f) | RS PRO carbon film 0.25 W 5 %: 10 kΩ / 3.3 kΩ / 1 kΩ | 707-7745 / 707-7701 / 707-7666 | 10 each | £1.93 / £1.45 / £1.45 |
+Placed Thu 1 Oct. **The RS order of 29 Sep never completed** (no payment, no order in the RS account). On
+re-ordering, RS had the AS5047P kit "temporarily out of stock" until **1 Dec 2026** (after the deadline):
+Farnell lists it "No Longer Manufactured", Mouser had none, DigiKey had 392 but marks it "Discontinued at
+DigiKey" (selling remaining stock). DigiKey was also cheaper for the Mean Well (£14.28 vs RS £22.36 ex VAT).
+A third sensor (spare: discontinued part) plus a spare capacitor took the basket over £65, which costs less
+than the £22 + VAT delivery.
 
-Basket: £64.11 ex VAT, £12.83 VAT. **No mains lead ordered**: the GST60A12 has an IEC C14 inlet; use any
-kettle/PC lead (C13).
+| Part | As ordered | Qty | Price ex VAT |
+|---|---|---|---|
+| PSU (SPEC 9) | Mean Well GST60A12-P1J, 12 V 5 A | 1 | £14.28 |
+| Angle sensor (SPEC 7) | ams-OSRAM AS5047P-TS_EK_AB adapter kit (magnet included) | **3** (joint 1, joint 2 for the double, 1 spare) | £42.84 |
+| Schottky (15c) | onsemi MBR1045G, 45 V 10 A, TO-220AC | 1 | £2.08 |
+| Capacitor (15d) | Panasonic EEU-FR1V222L, 2200 µF 35 V, FR low-ESR, 105 °C | 2 | £5.34 |
+| TVS (15e) | Littelfuse 1.5KE22A (the design's original part) | 1 | £0.78 |
+| Flyback (15b) | Vishay 1N4001-E3/54 | 3 | £1.23 |
+| Resistors (15f) | Stackpole CF14JT, 0.25 W 5 %: 10 kΩ ×5, 3.3 kΩ ×3, 1 kΩ ×2 | 10 | ~£0.70 |
+
+Subtotal £65.33 ex VAT, delivery free (UPS). **No mains lead ordered**: the GST60A12 has an IEC C14 inlet; use
+any kettle/PC lead (C13).
 
 ## 3. Gears & Sprockets — drive (≈ £16.67 incl. £5.95 + VAT shipping)
 

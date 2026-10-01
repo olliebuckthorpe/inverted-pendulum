@@ -96,8 +96,9 @@ Prices were checked 2026-09-24. ✅ = confirmed on the seller's page; ⚠️ = s
 
 **Ordered 28–29 Sep 2026.** What was actually bought (sellers, part numbers, prices) is in `hardware/orders.md`.
 Four parts were substituted at checkout, each for stock or price, with the evidence there and in
-`hardware/electronics.md`: the **MDD10A** driver (row 8), the **Pico 2 W** (row 6), the **1N4001** (15b) and the
-**1.5KE20A** (15e). Rows 13 (rod) and the frame (plywood, clamps, wood screws) are bought in person when needed.
+`hardware/electronics.md`: the **MDD10A** driver (row 8), the **Pico 2 W** (row 6) and the **1N4001** (15b). The
+power supply, sensors and small parts came from **DigiKey** (1 Oct): the RS order never completed, and the
+AS5047P kit is now discontinued (3 bought: 1 spare). Rows 13 (rod) and the frame (plywood, clamps, wood screws) are bought in person when needed.
 
 | # | Part | Spec to match | Qty | Seller (UK) | Price | Buy |
 |---|---|---|---|---|---|---|
@@ -120,7 +121,7 @@ Four parts were substituted at checkout, each for stock or price, with the evide
 | 15b | Flyback diode | 1N4007 (across the relay coil). *Ordered: 1N4001, the 50 V grade of the same diode* | 1 pack | Amazon UK | ⚠️ ~£1–2 | Now (skip if owned) |
 | 15c | Schottky diode | ≥ 8 A, ≥ 40 V (e.g. MBR1045, TO-220): stops braking energy reaching the PSU (hardware/electronics.md) | 1 | Any UK electronics seller | ⚠️ ~£1 | Now |
 | 15d | Bulk capacitor | 2200 µF 35 V low-ESR electrolytic, at the driver | 1 | Any UK electronics seller | ⚠️ ~£1–2 | Now |
-| 15e | TVS diode | ~21–23 V breakdown, unidirectional (e.g. 1.5KE22A). *Ordered: 1.5KE20A (17.1 V stand-off, 19.0–21.0 V breakdown: the 17.8 V sim peak sits between them, so at most a little leakage during a braking burst; see hardware/electronics.md)* | 1 | Any UK electronics seller | ⚠️ ~£0.50 | Now |
+| 15e | TVS diode | ~21–23 V breakdown, unidirectional (e.g. 1.5KE22A). *Ordered: 1.5KE22A (DigiKey)* | 1 | Any UK electronics seller | ⚠️ ~£0.50 | Now |
 | 15f | Resistors | 10 kΩ ×5, 3.3 kΩ ×3, 1 kΩ ×2 (pull-downs, end-stop dividers, encoder series) | – | Any UK electronics seller | ⚠️ ~£1–5 | Now (skip if a kit is owned) |
 | 16 | Fuse | Inline blade fuse holders + mixed fuses (use **7.5 A**) | 1 kit | Amazon UK | ✅ £7.99 | Now |
 | 17 | Wiring | 18 AWG silicone red/black; Dupont jumpers; small breadboard | – | Amazon UK | ✅ £6.74 / ✅ £6.99 / ⚠️ ~£7.99 | Now (skip anything already owned) |
