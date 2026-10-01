@@ -51,7 +51,10 @@ sensor board and screws ~13 g). The sim assumed 400 g, and the AI's domain rando
 
 - [ ] AS5047P adapter board: outline, hole positions, thickness, chip height, and header direction
       (update `sensor_mount` if the ±2 mm slots don't cover it).
-- [ ] Test-print a 608 seat and the shaft bores; tune `fit` (default 0.15 mm radial).
+- [ ] **Print `out/fit_test.stl` first** (≈ 14 g, ~30–40 min): three 608 seats and three 8 mm shaft bores at
+      radial clearance 0.10 / 0.15 / 0.20 mm, marked with 1 / 2 / 3 notches. Pick the tightest seat a bearing
+      still presses into by hand and the tightest bore the shaft turns in; set `fit` in `P` (default 0.15 mm)
+      and re-export before printing the cart, rod hub and magnet cap.
 - [ ] Measure the GT2 belt thickness; tune `belt_t`.
 - [ ] PLAN 2.2 "done when": the cart slides the full rail by hand without binding, the shaft spins freely in
       both bearings, the magnet sits centred on the sensor.

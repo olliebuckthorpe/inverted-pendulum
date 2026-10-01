@@ -357,10 +357,31 @@ def estimate_mass_g(solid: cq.Workplane, infill: float = 0.3, walls_mm: float = 
     return (shell + infill * (v - shell)) * density / 1000
 
 
+def fit_test(p: P, fits=(0.10, 0.15, 0.20)) -> cq.Workplane:
+    """Print this FIRST (LAYOUT.md "check when the parts arrive"): three 608 seats and three 8 mm shaft bores at
+    radial clearances 0.10 / 0.15 / 0.20 mm (the shaft bores use half, as the real parts do), marked with 1, 2, 3
+    notches on the front edge. Pick the tightest seat a bearing still presses into by hand and the tightest bore
+    the shaft turns in, and set P.fit to that value."""
+    pitch = p.bearing_od + 6
+    w, d, h = 3 * pitch, p.bearing_od + 6 + 14, p.bearing_w + 2
+    body = cq.Workplane("XY").box(w, d, h, centered=(True, False, False))
+    for i, f in enumerate(fits):
+        x = (i - 1) * pitch
+        y_seat = 3 + p.bearing_od / 2
+        body = body.cut(cq.Workplane("XY").workplane(offset=h - p.bearing_w).center(x, y_seat)
+                        .circle(p.bearing_od / 2 + f).extrude(p.bearing_w + 1))                # bearing seat
+        body = body.cut(cq.Workplane("XY").center(x, y_seat).circle(5).extrude(h))              # push-out hole
+        body = body.cut(cq.Workplane("XY").center(x, d - 7).circle(p.shaft_d / 2 + f / 2).extrude(h + 1))  # shaft bore
+        for n in range(i + 1):                                                                     # 1/2/3 notches
+            body = body.cut(cq.Workplane("XY").center(x + (n - i / 2) * 2.5, 0.75).rect(1.2, 1.5).extrude(h + 1))
+    return body
+
+
 PARTS = {"motor_block": motor_block, "idler_block": idler_block, "switch_carrier": switch_carrier,
          "end_ramp_right": lambda p: end_ramp(p, 1), "end_ramp_left": lambda p: end_ramp(p, -1),
          "bumper_right": lambda p: bumper(p, 1), "bumper_left": lambda p: bumper(p, -1),
-         "cart": cart, "belt_clamp": belt_clamp, "sensor_mount": sensor_mount, "magnet_cap": magnet_cap, "rod_hub": rod_hub}
+         "cart": cart, "belt_clamp": belt_clamp, "sensor_mount": sensor_mount, "magnet_cap": magnet_cap, "rod_hub": rod_hub,
+         "fit_test": fit_test}
 
 if __name__ == "__main__":
     p = P()
