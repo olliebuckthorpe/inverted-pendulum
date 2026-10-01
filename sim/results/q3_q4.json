@@ -2,89 +2,89 @@
   "q3": {
     "30T 0.30 m": {
       "success": 10,
-      "catch_s": 2.2489999999998633,
-      "max_x_mm": 240.78868182735644,
-      "peak_supply_A": 5.302886849915866,
-      "rms_supply_A": 0.3637441188203767,
+      "catch_s": 2.252999999999863,
+      "max_x_mm": 233.79295563798775,
+      "peak_supply_A": 5.316535499763343,
+      "rms_supply_A": 0.3102859056577633,
       "longest_above_trip_ms": 2.0,
-      "peak_motor_A": 5.351716417528398,
+      "peak_motor_A": 5.316535499763343,
       "success_capped_5A": 10,
-      "largest_tap_rad_s": 3.603515625
+      "largest_tap_rad_s": 3.7744140625
     },
     "30T 0.40 m": {
       "success": 10,
-      "catch_s": 2.3999999999998467,
-      "max_x_mm": 318.53356272141417,
-      "peak_supply_A": 5.367692936547881,
-      "rms_supply_A": 0.49916932915459783,
-      "longest_above_trip_ms": 3.0,
-      "peak_motor_A": 5.367692936547881,
+      "catch_s": 2.388999999999848,
+      "max_x_mm": 315.3236137830441,
+      "peak_supply_A": 5.349204691995985,
+      "rms_supply_A": 0.4419183492637255,
+      "longest_above_trip_ms": 2.0,
+      "peak_motor_A": 5.349204691995985,
       "success_capped_5A": 10,
-      "largest_tap_rad_s": 2.734375
+      "largest_tap_rad_s": 2.8466796875
     },
     "20T 0.30 m": {
       "success": 10,
-      "catch_s": 2.225999999999866,
-      "max_x_mm": 220.83540816489912,
-      "peak_supply_A": 5.067227336920624,
-      "rms_supply_A": 0.5203777809591374,
+      "catch_s": 2.2209999999998664,
+      "max_x_mm": 220.05899706828887,
+      "peak_supply_A": 5.071387759780387,
+      "rms_supply_A": 0.47899388597957127,
       "longest_above_trip_ms": 0.0,
-      "peak_motor_A": 5.067227336920624,
+      "peak_motor_A": 5.071387759780387,
       "success_capped_5A": 10,
-      "largest_tap_rad_s": 2.958984375
+      "largest_tap_rad_s": 3.0322265625
     },
     "20T 0.40 m": {
       "success": 0,
       "catch_s": NaN,
-      "max_x_mm": 394.99075858186075,
-      "peak_supply_A": 4.918677977008674,
-      "rms_supply_A": 1.1585675102344157,
+      "max_x_mm": 394.93135923965656,
+      "peak_supply_A": 4.933732759742696,
+      "rms_supply_A": 1.0763940746733374,
       "longest_above_trip_ms": 0.0,
-      "peak_motor_A": 4.918677977008674,
+      "peak_motor_A": 4.933732759742696,
       "success_capped_5A": 0,
-      "largest_tap_rad_s": 2.265625
+      "largest_tap_rad_s": 2.314453125
     }
   },
   "q4": {
     "30T 100 Hz": {
-      "largest_tap_rad_s": 3.3984375,
+      "largest_tap_rad_s": 3.5546875,
       "swingup": 10,
-      "duty_chatter_rms": 0.06876001191605505
+      "duty_chatter_rms": 0.06538367597235395
     },
     "30T 200 Hz": {
-      "largest_tap_rad_s": 3.525390625,
+      "largest_tap_rad_s": 3.69140625,
       "swingup": 10,
-      "duty_chatter_rms": 0.0831292198786188
+      "duty_chatter_rms": 0.08098316649345542
     },
     "30T 500 Hz": {
-      "largest_tap_rad_s": 3.603515625,
+      "largest_tap_rad_s": 3.7744140625,
       "swingup": 10,
-      "duty_chatter_rms": 0.11977006051935894
+      "duty_chatter_rms": 0.11518968346897081
     },
     "30T 1000 Hz": {
-      "largest_tap_rad_s": 3.6328125,
+      "largest_tap_rad_s": 3.798828125,
       "swingup": 10,
-      "duty_chatter_rms": 0.13289918418168575
+      "duty_chatter_rms": 0.1279283153892509
     },
     "20T 100 Hz": {
-      "largest_tap_rad_s": 2.7978515625,
+      "largest_tap_rad_s": 2.8662109375,
       "swingup": 10,
-      "duty_chatter_rms": 0.07332664466501931
+      "duty_chatter_rms": 0.07317961265497441
     },
     "20T 200 Hz": {
-      "largest_tap_rad_s": 2.900390625,
+      "largest_tap_rad_s": 2.96875,
       "swingup": 10,
-      "duty_chatter_rms": 0.07980105117652612
+      "duty_chatter_rms": 0.08061652472511568
     },
     "20T 500 Hz": {
-      "largest_tap_rad_s": 2.958984375,
+      "largest_tap_rad_s": 3.0322265625,
       "swingup": 10,
-      "duty_chatter_rms": 0.10125815533581844
+      "duty_chatter_rms": 0.09872867377811188
     },
     "20T 1000 Hz": {
-      "largest_tap_rad_s": 2.9833984375,
+      "largest_tap_rad_s": 3.056640625,
       "swingup": 10,
-      "duty_chatter_rms": 0.11778054778378612
+      "duty_chatter_rms": 0.11668875821609054
     }
   }
 }
