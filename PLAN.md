@@ -47,10 +47,11 @@ Everything below is already researched and sourced in SPEC §6–§17. Don't re-
 - Use SPEC §6 items 1–18 plus **15a (relay) and 15b (diode)**, but **not item 9, the PSU**: it's ordered with the motor once sim Q6 has sized it. Re-check every ⚠️ price at checkout: the rail at **1000 mm**, the AS5047P kit, the MD13S VAT, the E-stop, the shaft. Skip anything already owned (breadboard, jumpers, bolts, wire).
 - Double-check the exact specs as you buy: **GT2 6 mm belt; 20T and 30T pulleys with a 6 mm bore; MGN12H carriage; Pico 2 H; AS5047P-TS_EK_AB; MD13S; a 12 V automotive relay with 30–40 A contacts.**
 - **Done when:** order confirmations have been saved to `hardware/orders.md` (item, seller, price paid, expected delivery).
-- **Progress (30 Sep):** everything online was ordered 28–29 Sep (with the motor and PSU) from TME, RS, Gears &
-  Sprockets, Amazon and The Pi Hut; `hardware/orders.md` lists every item, seller, part number and price.
-  Substitutions: MDD10A for the MD13S, Pico 2 W for the Pico 2 H, 1N4001 for the 1N4007, 1.5KE20A for the
-  1.5KE22A (reasons in orders.md / hardware/electronics.md). **Not yet done:** order numbers and expected
+- **Progress (1 Oct):** everything online is ordered: TME, Gears & Sprockets, Amazon and The Pi Hut on 28–29 Sep,
+  and **DigiKey on 1 Oct** in place of RS (the RS checkout never completed, and the AS5047P kit is now
+  discontinued: 3 bought, 1 spare). `hardware/orders.md` lists every item, seller and price. Substitutions:
+  MDD10A for the MD13S, Pico 2 W for the Pico 2 H, 1N4001 for the 1N4007 (reasons in orders.md /
+  hardware/electronics.md). Spend ≈ £331 + The Pi Hut's delivery + in-person items, against a £150–200 target. **Not yet done:** order numbers and expected
   delivery dates from the confirmation emails (Ollie), and the in-person items (rod, plywood beam, clamps,
   wood screws), bought when needed.
 

@@ -54,7 +54,7 @@ direction. (The distance check with a ruler comes in stage 6, once the cart is o
 ## Stage 5 — Driver and bus, motor still disconnected (PLAN 3.2, part 2)
 
 1. After the E-stop: **MBR1045G** (band towards the bus) → **BUS**; **2200 µF** across BUS–GND (**stripe = −**);
-   **1.5KE20A** across BUS–GND (**band to BUS**); MDD10A **B+** ← BUS, **B−** ← GND.
+   **1.5KE22A** across BUS–GND (**band to BUS**); MDD10A **B+** ← BUS, **B−** ← GND.
 2. Logic to the MDD10A 5-way connector: GND, PWM1 ← GP14, DIR1 ← GP15, each with its **10 kΩ pull-down**;
    PWM2 and DIR2 to GND (channel 2 unused).
 3. **Logic levels:** `bringup.py PORT levels` holds PWM, then DIR, steadily HIGH for 8 s each. **Measure ≥ 3.0 V**

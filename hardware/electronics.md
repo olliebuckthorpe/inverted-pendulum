@@ -2,7 +2,7 @@
 
 Written Fri 25 Sep 2026, before any wiring. **Updated Wed 30 Sep for the parts actually ordered** (see
 `hardware/orders.md`): **Cytron MDD10A** instead of the MD13S (not obtainable in time on 29 Sep: The Pi Hut
-sold out, Active Robots and RobotBits sites down, Farnell 16 weeks, Amazon arriving 16–31 Oct), **1.5KE20A** TVS instead of 1.5KE22A (RS out of stock), **1N4001** instead of
+sold out, Active Robots and RobotBits sites down, Farnell 16 weeks, Amazon arriving 16–31 Oct), **1N4001** instead of
 1N4007 (same diode, 50 V grade, fine across a 12 V coil), **Pico 2 W** instead of Pico 2 H (cheaper in the
 one Amazon basket; the firmware still builds for the plain Pico 2, see `firmware/build.sh`). Every figure below is quoted from a datasheet (sources at the end)
 or measured in the sim (`sim/`). Decisions were made by Ollie from the options and evidence listed.
@@ -25,7 +25,7 @@ generator driving current through its own windings, which brakes it).
                                            │
                         BUS ───────────────┼────────────┬───────────────┐
                                            │            │               │
-                                     2200 µF 35 V   TVS 1.5KE20A    MDD10A B+ (B− → GND)
+                                     2200 µF 35 V   TVS 1.5KE22A    MDD10A B+ (B− → GND)
                                            │            │               │
  GND ──────────────────────────────────────┴────────────┴───────────────┴── common with the Pico's GND
 
@@ -55,9 +55,8 @@ generator driving current through its own windings, which brakes it).
   current 0.31–0.51 A. Keeping the PSU under 12.6 V without a diode would need ~27,000 µF. With the diode, the
   PSU never sees it; 2200 µF absorbs a 0.2 J burst with the bus rising to √(11.6² + 2·0.2/0.0022) ≈ 17.8 V,
   under the MDD10A's 30 V maximum (Rev 2.0; the v1.1 manual's table says 25 V for Rev 1.0, so **check the board
-  is marked REV2.0**). The TVS (1.5KE20A: 17.1 V stand-off, 19.0–21.0 V breakdown) is a backstop clamp. The
-  17.8 V sim peak sits between its stand-off and breakdown, so it may leak a little during a braking burst,
-  which only helps; in normal running (≤ 12 V) it does nothing. At
+  is marked REV2.0**). The TVS (1.5KE22A: 18.8 V stand-off, 20.9–23.1 V breakdown) is a backstop clamp; the
+  17.8 V sim peak stays below its stand-off, and in normal running (≤ 12 V) it does nothing. At
   these currents (≤ 0.5 A reverse, 0.2 J) it holds the bus near its breakdown voltage, far below 25 V. The diode costs ~0.4 V;
   the sim still swings up 10/10 (single) and completes the double tour 5/5 at 11.6 V.
 - **Firmware current limiter** (SPEC §11 Q6): supply current ≤ 4.5 A until Phase 4 fits R and Ke, then 5 A.
@@ -119,15 +118,15 @@ HIGH, measure ≥ 3.0 V at the MDD10A input (and ≤ 0.5 V for LOW). If it reads
 - **Braking energy can't trip the PSU** (diode), and the bus is limited by the capacitor and TVS.
 - Still to be proven on the bench, not assumed: every item in PLAN 3.4.
 
-## 4. Parts added by this step (ordered 29 Sep, RS)
+## 4. Parts added by this step (ordered 1 Oct, DigiKey; the 29 Sep RS order never completed)
 
 | Part | As ordered | Qty | Notes |
 |---|---|---|---|
-| Schottky diode | onsemi MBR1045G, 45 V 10 A, TO-220AC (RS 545-2872) | 5 | Needs a small heatsink or a copper area: ~0.4 V × 5 A peak |
-| Electrolytic capacitor | Panasonic EEUFR1V222L, 2200 µF 35 V, low-ESR, 105 °C (RS 739-6831) | 2 | Mind the polarity |
-| TVS diode | Vishay 1.5KE20A-E3/54, 1.5 kW unidirectional (RS 902-6398) | 10 | Cathode to BUS |
-| Relay flyback diode | Vishay 1N4001-E3/54 (RS 628-8931) | 10 | Cathode to the coil's +12 V side |
-| Resistors | RS PRO carbon film 0.25 W 5 %: 10 kΩ (707-7745), 3.3 kΩ (707-7701), 1 kΩ (707-7666) | 10 each | |
+| Schottky diode | onsemi MBR1045G, 45 V 10 A, TO-220AC | 1 | Needs a small heatsink or a copper area: ~0.4 V × 5 A peak |
+| Electrolytic capacitor | Panasonic EEU-FR1V222L, 2200 µF 35 V, low-ESR, 105 °C | 2 | Mind the polarity |
+| TVS diode | Littelfuse 1.5KE22A, 1.5 kW unidirectional | 1 | Cathode to BUS |
+| Relay flyback diode | Vishay 1N4001-E3/54 | 3 | Cathode to the coil's +12 V side |
+| Resistors | Stackpole CF14JT carbon film 0.25 W 5 %: 10 kΩ ×5, 3.3 kΩ ×3, 1 kΩ ×2 | 10 | |
 
 ## Sources
 
