@@ -48,7 +48,10 @@ class P:
     plate_x: float = 70.0           # cart plate length along the rail
     boss_depth: float = 22.0        # bearing boss sticks out this far in front of the plate
     wall: float = 3.0               # wall around bearings
-    fit: float = 0.15               # radial clearance for press/slip fits (tune after a test print)
+    fit: float = 0.10               # radial clearance for the 608 seats: fit_test on Ollie's Bambu A1 (PLA, 0.20 mm
+                                    # Standard), 5 Oct: seat 1 (0.10) a firm press fit, 2 and 3 looser
+    shaft_fit: float = 0.05         # radial clearance on the 8 mm shaft (rod hub, magnet cap): fit/2 until the
+                                    # shaft is tried in fit_test's bores (1/2/3 notches = 0.05/0.075/0.10)
     hub_gap: float = 1.5            # gap between boss front and rod hub
     hub_t: float = 14.0             # rod hub thickness along the shaft
     belt_z: float = -26.0           # upper belt strand: its top face touches the cart's ledge here
@@ -327,7 +330,7 @@ def magnet_cap(p: P) -> cq.Workplane:
     """Plastic cap pushed onto the shaft's back end: holds the magnet cap_spacer mm away from the steel."""
     grip = 6.0
     cap = cq.Workplane("XY").circle(p.shaft_d / 2 + 1.6).extrude(grip + p.cap_spacer + p.magnet_h)
-    cap = cap.cut(cq.Workplane("XY").circle(p.shaft_d / 2 + p.fit / 2).extrude(grip))            # onto the shaft
+    cap = cap.cut(cq.Workplane("XY").circle(p.shaft_d / 2 + p.shaft_fit).extrude(grip))            # onto the shaft
     cap = cap.cut(cq.Workplane("XY").workplane(offset=grip + p.cap_spacer)
                   .circle(p.magnet_d / 2 + p.fit).extrude(p.magnet_h + 1))                         # magnet pocket
     return cap
@@ -340,7 +343,7 @@ def rod_hub(p: P) -> cq.Workplane:
     hub = cq.Workplane("XY").circle(r).extrude(p.hub_t)                      # shaft along Z here
     arm = cq.Workplane("YZ").center(0, p.hub_t / 2).circle(p.tube_od / 2 + 3).extrude(r + 18)
     hub = hub.union(arm)
-    hub = hub.cut(cq.Workplane("XY").circle(p.shaft_d / 2 + p.fit / 2).extrude(p.hub_t))         # shaft bore
+    hub = hub.cut(cq.Workplane("XY").circle(p.shaft_d / 2 + p.shaft_fit).extrude(p.hub_t))         # shaft bore
     hub = hub.cut(cq.Workplane("YZ").workplane(offset=r - 2).center(0, p.hub_t / 2)
                   .circle(p.tube_od / 2 + p.fit / 2).extrude(22))                                   # tube socket
     hub = hub.cut(cq.Workplane("XY").center(-r, 0).rect(2 * r, 1.2).extrude(p.hub_t))              # clamp slit
@@ -357,10 +360,31 @@ def estimate_mass_g(solid: cq.Workplane, infill: float = 0.3, walls_mm: float = 
     return (shell + infill * (v - shell)) * density / 1000
 
 
+def fit_test(p: P, fits=(0.10, 0.15, 0.20)) -> cq.Workplane:
+    """Print this FIRST (LAYOUT.md "check when the parts arrive"): three 608 seats and three 8 mm shaft bores at
+    radial clearances 0.10 / 0.15 / 0.20 mm (the shaft bores use half, as the real parts do), marked with 1, 2, 3
+    notches on the front edge. Pick the tightest seat a bearing still presses into by hand and the tightest bore
+    the shaft turns in, and set P.fit to that value."""
+    pitch = p.bearing_od + 6
+    w, d, h = 3 * pitch, p.bearing_od + 6 + 14, p.bearing_w + 2
+    body = cq.Workplane("XY").box(w, d, h, centered=(True, False, False))
+    for i, f in enumerate(fits):
+        x = (i - 1) * pitch
+        y_seat = 3 + p.bearing_od / 2
+        body = body.cut(cq.Workplane("XY").workplane(offset=h - p.bearing_w).center(x, y_seat)
+                        .circle(p.bearing_od / 2 + f).extrude(p.bearing_w + 1))                # bearing seat
+        body = body.cut(cq.Workplane("XY").center(x, y_seat).circle(5).extrude(h))              # push-out hole
+        body = body.cut(cq.Workplane("XY").center(x, d - 7).circle(p.shaft_d / 2 + f / 2).extrude(h + 1))  # shaft bore
+        for n in range(i + 1):                                                                     # 1/2/3 notches
+            body = body.cut(cq.Workplane("XY").center(x + (n - i / 2) * 2.5, 0.75).rect(1.2, 1.5).extrude(h + 1))
+    return body
+
+
 PARTS = {"motor_block": motor_block, "idler_block": idler_block, "switch_carrier": switch_carrier,
          "end_ramp_right": lambda p: end_ramp(p, 1), "end_ramp_left": lambda p: end_ramp(p, -1),
          "bumper_right": lambda p: bumper(p, 1), "bumper_left": lambda p: bumper(p, -1),
-         "cart": cart, "belt_clamp": belt_clamp, "sensor_mount": sensor_mount, "magnet_cap": magnet_cap, "rod_hub": rod_hub}
+         "cart": cart, "belt_clamp": belt_clamp, "sensor_mount": sensor_mount, "magnet_cap": magnet_cap, "rod_hub": rod_hub,
+         "fit_test": fit_test}
 
 if __name__ == "__main__":
     p = P()
