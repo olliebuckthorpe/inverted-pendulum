@@ -121,6 +121,13 @@ def cart(p: P) -> cq.Workplane:
     bore = (cq.Workplane("XZ").workplane(offset=-(y0 - 1)).center(0, p.pivot_z)
             .circle(p.shaft_d / 2 + 1.0).extrude(-(front_y + 2 - y0)))
     body = body.cut(bore)
+    # the front seat's inner step as a 45° cone, not a flat ledge: printed standing on the boss (cart_print), a
+    # flat ledge overhangs and the slicer fills the seat with support; the cone prints itself. The bearing still
+    # stops at the same depth, on its outer edge.
+    r_seat, r_bore = p.bearing_od / 2 + p.fit, p.shaft_d / 2 + 1.0
+    cone = cq.Solid.makeCone(r_seat, r_bore, r_seat - r_bore,
+                             cq.Vector(0, front_y - p.bearing_w, p.pivot_z), cq.Vector(0, -1, 0))
+    body = body.cut(cq.Workplane("XY").add(cone))
     # screw holes through pads and plate (M3 clearance 3.4) with counterbores for the heads
     holes = [(sx * p.carriage_hole_c / 2, sz * p.carriage_hole_b / 2) for sx in (-1, 1) for sz in (-1, 1)]
     body = body.cut(cq.Workplane("XZ").pushPoints(holes).circle(1.7).extrude(-(y0 + p.plate_t + 1)))
@@ -144,6 +151,14 @@ def cart(p: P) -> cq.Workplane:
         body = body.cut(cq.Workplane("XZ").workplane(offset=-(y0 - 0.1)).center(sx * 25, -3)
                         .rect(12, 18).extrude(-(p.plate_t + 0.2)))
     return body
+
+
+def cart_print(p: P) -> cq.Workplane:
+    """The cart turned to how it prints best: standing on the bearing boss's front face, so both bearing seats
+    print as level circles (round); the plate needs tree supports from the bed, the pads and ledge point up."""
+    c = cart(p).rotate((0, 0, 0), (1, 0, 0), -90)            # +Y (the boss's front) now points down
+    bb = c.val().BoundingBox()
+    return c.translate((-(bb.xmin + bb.xmax) / 2, -(bb.ymin + bb.ymax) / 2, -bb.zmin))
 
 
 def belt_clamp(p: P) -> cq.Workplane:
@@ -387,7 +402,7 @@ PARTS = {"motor_block": motor_block, "idler_block": idler_block, "switch_carrier
          "end_ramp_right": lambda p: end_ramp(p, 1), "end_ramp_left": lambda p: end_ramp(p, -1),
          "bumper_right": lambda p: bumper(p, 1), "bumper_left": lambda p: bumper(p, -1),
          "cart": cart, "belt_clamp": belt_clamp, "sensor_mount": sensor_mount, "magnet_cap": magnet_cap, "rod_hub": rod_hub,
-         "fit_test": fit_test}
+         "fit_test": fit_test, "cart_print": cart_print}
 
 if __name__ == "__main__":
     p = P()
