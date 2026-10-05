@@ -6,6 +6,8 @@
 # off. Only the on-board LED (on the wireless chip) is lost, and the firmware doesn't use it.
 set -e
 cd "$(dirname "$0")"
+INC="$(pwd)"
+command -v cygpath >/dev/null 2>&1 && INC="$(cygpath -m "$INC")"   # Git Bash on Windows: C:/... not /c/...
 arduino-cli compile --fqbn rp2040:rp2040:rpipico2 \
-  --build-property "compiler.cpp.extra_flags=-I$(pwd) -Wall -Wno-missing-braces" \
+  --build-property "compiler.cpp.extra_flags=-I$INC -Wall -Wno-missing-braces" \
   --output-dir build pendulum "$@"

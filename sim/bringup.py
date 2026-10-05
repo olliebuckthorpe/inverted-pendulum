@@ -262,6 +262,8 @@ def cmd_fallcheck(L, a):
 
 
 def main():
+    if hasattr(sys.stdout, "reconfigure"):          # Windows consoles default to cp1252, which can't print ✓/✗/θ
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("port")
     sub = ap.add_subparsers(dest="cmd", required=True)
