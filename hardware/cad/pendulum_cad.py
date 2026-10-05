@@ -50,8 +50,11 @@ class P:
     wall: float = 3.0               # wall around bearings
     fit: float = 0.10               # radial clearance for the 608 seats: fit_test on Ollie's Bambu A1 (PLA, 0.20 mm
                                     # Standard), 5 Oct: seat 1 (0.10) a firm press fit, 2 and 3 looser
-    shaft_fit: float = 0.05         # radial clearance on the 8 mm shaft (rod hub, magnet cap): fit/2 until the
-                                    # shaft is tried in fit_test's bores (1/2/3 notches = 0.05/0.075/0.10)
+    # 8 mm shaft in fit_test's bores, 5 Oct: notch 1 (0.05) no, 2 (0.075) and 3 (0.10) only just: the A1 prints
+    # 8 mm holes small. So the rod hub (slides on, then the pinch screws grip) gets more room than any test bore,
+    # and the magnet cap (push-fit, no screws) gets the tightest bore the shaft still entered.
+    shaft_fit: float = 0.15         # rod hub on the shaft, and its socket for the 8 mm aluminium tube
+    press_fit: float = 0.10         # magnet cap onto the shaft
     hub_gap: float = 1.5            # gap between boss front and rod hub
     hub_t: float = 14.0             # rod hub thickness along the shaft
     belt_z: float = -26.0           # upper belt strand: its top face touches the cart's ledge here
@@ -330,7 +333,7 @@ def magnet_cap(p: P) -> cq.Workplane:
     """Plastic cap pushed onto the shaft's back end: holds the magnet cap_spacer mm away from the steel."""
     grip = 6.0
     cap = cq.Workplane("XY").circle(p.shaft_d / 2 + 1.6).extrude(grip + p.cap_spacer + p.magnet_h)
-    cap = cap.cut(cq.Workplane("XY").circle(p.shaft_d / 2 + p.shaft_fit).extrude(grip))            # onto the shaft
+    cap = cap.cut(cq.Workplane("XY").circle(p.shaft_d / 2 + p.press_fit).extrude(grip))            # onto the shaft
     cap = cap.cut(cq.Workplane("XY").workplane(offset=grip + p.cap_spacer)
                   .circle(p.magnet_d / 2 + p.fit).extrude(p.magnet_h + 1))                         # magnet pocket
     return cap
@@ -345,7 +348,7 @@ def rod_hub(p: P) -> cq.Workplane:
     hub = hub.union(arm)
     hub = hub.cut(cq.Workplane("XY").circle(p.shaft_d / 2 + p.shaft_fit).extrude(p.hub_t))         # shaft bore
     hub = hub.cut(cq.Workplane("YZ").workplane(offset=r - 2).center(0, p.hub_t / 2)
-                  .circle(p.tube_od / 2 + p.fit / 2).extrude(22))                                   # tube socket
+                  .circle(p.tube_od / 2 + p.shaft_fit).extrude(22))                                   # tube socket
     hub = hub.cut(cq.Workplane("XY").center(-r, 0).rect(2 * r, 1.2).extrude(p.hub_t))              # clamp slit
     hub = hub.cut(cq.Workplane("YZ").workplane(offset=-r - 1).center(-r / 2 - 1, p.hub_t / 2)
                   .circle(1.6).extrude(2 * r + 2))                                                  # pinch screw

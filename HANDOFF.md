@@ -45,7 +45,8 @@ firmware/build.sh                                       # Git Bash; builds for r
     to Ollie to flash; check Device Manager → Ports shows a COM port.
 - **Printing** (Bambu A1, PLA): fit test printed; **608 seats fit at 0.10 mm** (P.fit, PR #13). Queue: cart,
   motor_block, idler_block, end_ramp_right/left (`hardware/cad/out/`, 0.20 mm Standard, 4 walls, 30 %).
-  Waiting on Ollie's measurements: shaft in the fit-test bores (→ `P.shaft_fit`), belt thickness
+  Shaft fit done 5 Oct (rod hub 0.15 mm slide + pinch screws, magnet cap 0.10 mm push-fit; both re-exported).
+  Waiting on Ollie's measurements: belt thickness
   (→ `belt_t`), micro-switch hole size and roller height (→ switch carrier). Sensor mount waits for the
   AS5047P boards.
 - **Open PRs:** #12 (AI double swing-up write-up), #13 (fit test + fit 0.10). Merge in order when Ollie says.
