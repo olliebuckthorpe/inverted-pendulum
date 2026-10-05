@@ -32,8 +32,8 @@ head-to-head on the same real hardware using a test set fixed in advance.
 | **Reach** | Triple | **Out of scope before 5 Nov.** "What's next" in the write-up |
 
 **AI for the double (added 2026-09-30 at Ollie's request):** the AI double balance in sim is done (97–100/100
-on realistic rigs, `sim/RESULTS-ai-double.md`); an **AI double swing-up in sim is an exploratory experiment**,
-reported honestly whether or not it learns. Neither changes the hardware order: classical double first.
+on realistic rigs, `sim/RESULTS-ai-double.md`); the **AI double swing-up** (exploratory) works on 68 % of realistic
+rigs from hanging but 0 % on the nominal rig, so it is reported as "exists in sim, not dependable". Neither changes the hardware order: classical double first.
 
 **Double swing-up on hardware (decided 2026-09-24: attempt it, as the top of the stretch tier).** The sim
 shows it's physically possible with this motor, rail and PSU (sim/RESULTS-sim-phase.md), but no hobby build

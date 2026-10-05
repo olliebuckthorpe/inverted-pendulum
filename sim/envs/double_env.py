@@ -40,6 +40,12 @@ from plant import wrap
 
 CTRL_HZ = 500.0
 TRAVEL_LIMIT = 0.38
+TURN_LIMIT = 2 * math.pi   # rod 1 within ±1 turn of hanging: the joint-2 cable (SPEC §3; the classical plans obey it)
+# The hand-over zone is a level set of the balance LQR's cost-to-go, V = s'·S·s < CATCH_V (s = [x, a1, a2, xd,
+# a1d, a2d] from upright, a2 relative). Calibrated 30 Sep on 400 random states on realistic rigs (50 Hz, Kalman,
+# noise): V <= 180 caught 100 %, V <= 295 95 %, V <= 600 71 %. A box (15° and 3 rad/s per rod, or even 5°/1 rad/s)
+# caught only 20-65 %: the double's catchable states are shaped by how the rods move TOGETHER, not per rod.
+CATCH_V = 250.0
 
 
 def randomise(base: dict, rng: np.random.Generator, scale: float = 1.0) -> dict:
@@ -66,7 +72,11 @@ class DoubleEnv(gym.Env):
 
     def __init__(self, task: str = "balance", randomise_scale: float = 1.0, policy_hz: float = 200.0,
                  smooth_hz: float = 40.0, episode_s: float | None = None, base: dict | None = None,
-                 noise_deg: float | None = None, w_x: float = 1.0, w_da: float = 0.05, estimator: str = "diff"):
+                 noise_deg: float | None = None, w_x: float = 1.0, w_da: float = 0.05, estimator: str = "diff",
+                 start: str = "near", reward: str = "height"):
+        """start (balance): "near" = small offsets from upright; "catch" = the messier states a swing-up hands
+        over in (up to the catch zone's edge). reward (swing-up): "height" = tip height; "catch" = reach the
+        hand-over zone, which ends the episode with a +100 bonus (the balance policy takes it from there)."""
         """noise_deg: if set, overrides the randomised sensor noise (0.0 = train without noise, the lesson
         from the single: noise stops SAC learning; always EVALUATE with noise on)."""
         assert task in ("balance", "swingup")
@@ -77,16 +87,20 @@ class DoubleEnv(gym.Env):
         self.n_ctrl = round(CTRL_HZ / policy_hz)
         self.alpha = 1 / (1 + CTRL_HZ / (2 * math.pi * smooth_hz))
         self.episode_steps = round((episode_s or (8.0 if task == "balance" else 12.0)) * policy_hz)
-        self.estimator = estimator
+        self.estimator, self.start, self.reward_mode = estimator, start, reward
+        self.kf_A = None
+        self.S = None
+        self.level = 1.0                                 # reverse curriculum: 1 = start hanging (evaluation)
+        if start == "reverse":
+            self.plan = D.load("30T_30-20_damping150_u60_x30")
+            S = C.balance_gain(self.base, 50.0)[1]
+            Xw = self.plan["X"].copy()
+            Xw[1:3] = np.arctan2(np.sin(Xw[1:3]), np.cos(Xw[1:3]))
+            V = np.einsum("ik,ij,jk->k", Xw, S, Xw)
+            self.plan_entry = int(np.argmax(V < CATCH_V))   # first sample inside the zone
         if estimator == "kf":
             assert task == "balance", "the Kalman filter is linearised about upright"
-            nominal = model.with_params(self.base, sensing__angle_noise_deg=0.068)
-            A, B = (np.array(M) for M in C.jacobians(nominal)(np.zeros(6), 0.0))
-            import control
-            sysd = control.c2d(control.ss(A, B, np.eye(6), 0), 1.0 / CTRL_HZ, method="zoh")
-            g = {"t": [], "Ad": [], "dt": 1.0 / CTRL_HZ, "X": [np.zeros(6)]}
-            kf = C.kalman_gains(nominal, g)
-            self.kf_A, self.kf_B, self.kf_L = kf["A_bal"], kf["B_bal"].ravel(), kf["L_bal"]
+            self._kf_setup()
         self.observation_space = gym.spaces.Box(-np.inf, np.inf, (9,), np.float32)
         self.action_space = gym.spaces.Box(-1.0, 1.0, (1,), np.float32)
 
@@ -110,7 +124,26 @@ class DoubleEnv(gym.Env):
         self.v_alpha = self.ctrl_dt / (self.ctrl_dt + 1 / (2 * math.pi * s["velocity_filter_hz"]))
         self.noise = math.radians(s["angle_noise_deg"])
         self.rng = rng
-        if self.task == "balance":
+        if self.task == "swingup" and self.start == "reverse":
+            # reverse curriculum (Salimans & Chen 2018): start somewhere along the classical swing-up's path,
+            # `level` of the way back from its end (0 = just below the catch zone, 1 = hanging). Only the plan's
+            # STATES are used as starting points, never its actions; success is still judged from hanging.
+            X = self.plan["X"]
+            kmax = self.plan_entry - 3                # just before the plan enters the catch zone
+            k_hi = int(round((1 - self.level) * kmax))
+            k = int(rng.integers(max(0, k_hi - kmax // 10), k_hi + 1))
+            q0 = tuple(X[:3, k] + rng.normal(0, [0.005, 0.02, 0.02]))
+            qd0 = tuple(X[3:, k] + rng.normal(0, [0.02, 0.1, 0.1]))
+        elif self.task == "balance" and self.start == "catch":
+            if self.S is None:
+                self.S = C.balance_gain(self.base, 50.0)[1]
+            while True:                                   # uniform over the catch zone (rejection sampling)
+                st = np.array([rng.uniform(-0.1, 0.1), rng.uniform(-0.3, 0.3), rng.uniform(-0.3, 0.3),
+                               rng.uniform(-0.5, 0.5), rng.uniform(-3, 3), rng.uniform(-3, 3)])
+                if st @ self.S @ st < CATCH_V:
+                    break
+            q0, qd0 = tuple(st[:3]), tuple(st[3:])
+        elif self.task == "balance":
             q0 = (rng.uniform(-0.05, 0.05), rng.uniform(-0.06, 0.06), rng.uniform(-0.06, 0.06))
             qd0 = (rng.uniform(-0.1, 0.1), rng.uniform(-0.3, 0.3), rng.uniform(-0.3, 0.3))
         else:
@@ -123,7 +156,9 @@ class DoubleEnv(gym.Env):
         self.pos, self.vel = self.prev.copy(), np.zeros(3)
         self.duty = self.last_action = 0.0
         self.k = self.up_time = 0
-        self.e = np.array([*self.pos, 0.0, 0.0, 0.0]) if estimator_is_kf(self) else None
+        self.e = None
+        if estimator_is_kf(self):
+            self.e = np.array([*self.pos, *qd0])     # balance starts: the filter starts from the true state
         self.u_hist = deque([0.0] * 2, maxlen=2)         # the command that acted over the last cycle (~1 cycle delay)
         return self._obs(), {}
 
@@ -138,6 +173,38 @@ class DoubleEnv(gym.Env):
         self.prev = meas
         self.pos = self.pos + delta
         self.vel += self.v_alpha * (delta / self.ctrl_dt - self.vel)
+
+    def _kf_setup(self):
+        """The classical double's steady-state balance filter about upright, from the NOMINAL model."""
+        if self.kf_A is None:
+            import control
+            nominal = model.with_params(self.base, sensing__angle_noise_deg=0.068)
+            A, B = (np.array(M) for M in C.jacobians(nominal)(np.zeros(6), 0.0))
+            sysd = control.c2d(control.ss(A, B, np.eye(6), 0), 1.0 / CTRL_HZ, method="zoh")
+            kf = C.kalman_gains(nominal, {"t": [], "Ad": [], "dt": 1.0 / CTRL_HZ, "X": [np.zeros(6)]})
+            self.kf_A, self.kf_B, self.kf_L = kf["A_bal"], kf["B_bal"].ravel(), kf["L_bal"]
+
+    def start_kf(self):
+        """Hand-over: start the balance filter from the current measured state (positions wrapped about
+        upright, velocities from differencing); from here on the observation carries its estimate."""
+        self._kf_setup()
+        pos = np.array(self.pos)
+        pos[1], pos[2] = wrap(pos[1]), wrap(pos[2])
+        self.e = np.concatenate([pos, self.vel])
+
+    def catch_V(self, measured: bool = False) -> float:
+        """The balance LQR's cost-to-go of the true state (training reward) or of the measured one (hand-over)."""
+        if self.S is None:
+            self.S = C.balance_gain(self.base, 50.0)[1]
+        if measured:
+            s = np.array([*self.pos, *self.vel])
+        else:
+            s = np.array([*self.d.qpos[:3], *self.d.qvel[:3]])
+        s[1], s[2] = wrap(s[1]), wrap(s[2])
+        return float(s @ self.S @ s)
+
+    def in_catch_zone(self, measured: bool = False) -> bool:
+        return self.catch_V(measured) < CATCH_V
 
     def _kf(self):
         """One predict/correct of the balance Kalman filter on the measured positions (state error from upright)."""
@@ -174,6 +241,8 @@ class DoubleEnv(gym.Env):
         b2 = wrap(a1 + a2)                       # rod 2's absolute angle from upright
         w1, w2 = self.d.qvel[1], self.d.qvel[1] + self.d.qvel[2]
         off_rail = abs(x) > TRAVEL_LIMIT
+        # the cable across joint 1 only allows ±1 turn from hanging; the height-only swing-up spun rod 1 4-8 turns
+        wound = self.task == "swingup" and abs(self.d.qpos[1] - math.pi) > TURN_LIMIT
         da = a - self.last_action
         self.last_action = a
         if self.task == "balance":
@@ -190,15 +259,27 @@ class DoubleEnv(gym.Env):
             L1, L2 = self.p["pole"]["length"], self.p["pole2"]["length"]
             h = 0.5 * (1 + (L1 * math.cos(a1) + L2 * math.cos(b2)) / (L1 + L2))
             reward = h - 0.5 * self.w_x * x * x - 0.02 * a * a - self.w_da * da * da
+            if self.reward_mode == "catchV":
+                # guide toward the hand-over zone: grows smoothly as the LQR cost-to-go falls (the arrival-only
+                # bonus gave the policy no signal about how close it came: min V stayed 1300-8000 vs the 250 zone)
+                reward += 2.0 * math.exp(-self.catch_V() / 2000.0)
             if math.cos(a1) > 0.9 and math.cos(b2) > 0.9:
                 reward += 1.0 - 0.01 * (w1 * w1 + w2 * w2)
-            terminated = bool(off_rail)
+            terminated = bool(off_rail or wound)
             if terminated:
                 reward -= 50.0
+            elif self.reward_mode == "catchV" and self.in_catch_zone():
+                reward += 100.0
+                terminated = True
+            elif self.reward_mode == "catch" and self.in_catch_zone():
+                reward += 100.0
+                terminated = True                 # the balance policy takes over from here
         up = abs(a1) < math.radians(10) and abs(b2) < math.radians(10)
         self.up_time = self.up_time + 1 if up else 0
         truncated = self.k >= self.episode_steps
-        info = {"a1": a1, "b2": b2, "x": x, "upright_s": self.up_time / self.policy_hz}
+        info = {"a1": a1, "b2": b2, "x": x, "upright_s": self.up_time / self.policy_hz,
+                "caught": bool(self.reward_mode in ("catch", "catchV") and terminated and not off_rail and not wound),
+                "wound": bool(wound)}
         return self._obs(), float(reward), terminated, truncated, info
 
 

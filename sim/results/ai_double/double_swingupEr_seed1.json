@@ -1,0 +1,35 @@
+{
+  "own_setup": {
+    "episodes": 100,
+    "success": 0,
+    "rate": 0.0
+  },
+  "realistic": {
+    "episodes": 100,
+    "success": 0,
+    "rate": 0.0
+  },
+  "no_noise": {
+    "episodes": 100,
+    "success": 0,
+    "rate": 0.0
+  },
+  "task": "swingup",
+  "variant": "Er",
+  "env": {
+    "randomise_scale": 0.0,
+    "noise_deg": 0.0,
+    "policy_hz": 50.0,
+    "reward": "catchV",
+    "start": "reverse"
+  },
+  "gamma": 0.995,
+  "net": [
+    256,
+    256
+  ],
+  "seed": 1,
+  "steps": 4000000,
+  "started_from": null,
+  "train_minutes": 326.9
+}

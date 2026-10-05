@@ -284,7 +284,9 @@ Choose the numbers from the sim so that neither controller is favoured. **Commit
 - **8.5** Optional, only if 8.4 is done early: a double-balance SAC policy in sim (and on hardware if time allows).
   **Done early in sim (30 Sep, Ollie's request, with an exploratory AI double swing-up): 97/100 and 100/100 on
   realistic rigs** at 50 Hz decisions with the Kalman-filtered state (`sim/RESULTS-ai-double.md`). On hardware it
-  still waits behind the classical double balance.
+  still waits behind the classical double balance. **AI double swing-up (exploratory, 1 Oct):** swing-up →
+  hand-over → balance from hanging works on 34/50 realistic rigs (reverse curriculum), but 0/30 on the nominal
+  rig, so it isn't dependable; the classical swing-up stays the hardware plan.
 - **🚦 Sun 1 Nov: stop.** Whatever state it's in becomes "progress + what's next" in the write-up. Film what works.
 
 ---
